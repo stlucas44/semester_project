@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include "std_msgs/String.h"
 
+#include <mesh_visualizer/mesh_visualizer.h>
 #include <sstream>
 
 /**
@@ -15,6 +16,9 @@ int main(int argc, char **argv)
   ros::Rate loop_rate(10);
 
   int count = 0;
+  meshVisualizer mvis(n);
+  mvis.setBool();
+
   while (ros::ok())
   {
 
