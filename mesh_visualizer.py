@@ -15,7 +15,7 @@ mesh_file = '../data/mini_spiez_2/2_densification/3d_mesh/2020_09_17_spiez_simpl
 pc_bunny = 'bunny.pcd'
 
 def main():
-    poly= load_point_cloud_las(point_cloud_file, center = True)
+    poly = load_point_cloud_las(point_cloud_file, center = True)
     visualize_point_cloud(poly)
 
     mesh = load_mesh(mesh_file)
@@ -64,7 +64,6 @@ def load_point_cloud_las(pc_file, v = 2, center = True):
     return poly
 def load_point_cloud_pcl(pc_file, v= 2, center = True):
     source = o3.io.read_point_cloud(pc_file)
-
 
     pass
 
