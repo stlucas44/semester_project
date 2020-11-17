@@ -1,8 +1,5 @@
 import numpy as np
 import matplotlib
-
-import open3d as o3
-
 import pyvista as pv
 
 from pyvista import examples
@@ -102,7 +99,6 @@ def visualize_point_cloud(poly):
     pass
 
 def visualize_example():
-
     mesh = examples.load_hexbeam()
     print(type(mesh))
     bcpos = [(6.20, 3.00, 7.50),
