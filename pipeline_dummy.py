@@ -49,8 +49,9 @@ def main():
         #some magic stuff
 
     # visualize gmmm
-    #o3_visualize(measurement_pc, prior_mesh, measurement_registered, mesh_sphere)
-    mpl_visualize(measurement_pc, measurement_gmm, prior_mesh)
+    o3_visualize(measurement_pc, prior_mesh, measurement_registered)
+    mpl_visualize(measurement_pc, prior_mesh, measurement registered)
+    mpl_visualize(measurement_gmm)
 
 
 def load_bunny_measurement():
@@ -137,15 +138,43 @@ def mpl_visualize(*obj):
 
         elif type(element) == type(sample_gmm):
             print("gmm detected")
-            centers = element.means
-            ax.scatter(centers[1:-1,0], centers[1:-1,1],
-                       centers[1:-1,2], c = 'g', s = 10.0, alpha = 0.7,
-                       label= "gmm")
+            show_mean = True
+            if show_mean:
+                centers = element.means
+                ax.scatter(centers[1:-1,0], centers[1:-1,1],
+                           centers[1:-1,2], c = 'g', s = 10.0, alpha = 0.7,
+                           label= "gmm")
             for i in range(0,len(element.means)):
                 local_cov = np.asarray(element.covariances[i])
+                local_mean = np.asarray(element.means[i])
                 eigenvals, eigenvecs = scipy.linalg.eigh(local_cov)
 
-                #ax.plot_surface(x,y,z)
+                # quadric: (x-v)' * cov * (x-v) = 1
+                # parametric representation
+                # source: https://en.wikipedia.org/wiki/Ellipsoid#:~:text=An%20ellipsoid%20has%20three%20pairwise,simply%20axes%20of%20the%20ellipsoid.
+                ellipse_resolution = 1.0
+                phi = np.asarray([np.arange(0.0,2.0 * np.pi,ellipse_resolution)])
+                theta = np.asarray([np.arange(-0.5 * np.pi, 0.5 * np.pi, 0.5 * ellipse_resolution)])
+
+                # build range for parameters
+                coscos = np.cos(theta.T) * np.cos(phi)
+                cossin = np.cos(theta.T) * np.sin(phi)
+                sin = np.sin(theta.T) * np.ones(shape = phi.shape)
+
+                target_vector = np.reshape([coscos[:], cossin[:], sin[:]],
+                                           (3, len(phi.T) * len(theta.T)))
+
+                #print(target_vector.shape)
+                factor = 100
+                eigenvals = np.diag(factor * eigenvals)
+                local_mean_spread = np.dot(np.diag(local_mean), np.ones(shape=(3,len(phi.T)*len(theta.T))))
+
+                #points = np.dot(np.dot(eigenvecs, eigenvals), target_vector) + local_mean_spread
+                points = np.dot(np.diag([factor, factor, factor]),
+                         np.dot(local_cov, target_vector)) + local_mean_spread
+
+                ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
+                                linewidth=0, antialiased=False)
 
         else:
             print("unkown type detected: " + type(element))
