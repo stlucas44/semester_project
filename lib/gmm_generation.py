@@ -3,6 +3,7 @@ import pickle
 
 class gmm:
     def __init__(self, weights = [], means = [], covariances = []):
+        self.num_train_points = 0
         self.weights = weights
         self.means = means
         self.covariances = covariances
@@ -15,6 +16,7 @@ class gmm:
         if recompute:
             self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n)
             print("starting gmm_fit")
+            self.num_train_points = len(pc.points)
             self.gmm_generator.fit(pc.points)
 
             self.means = self.gmm_generator.means_

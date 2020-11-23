@@ -88,14 +88,16 @@ def visualize_gmm(gmm, ax, show_mean = True):
 
         ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
                         linewidth=0, antialiased=False)
+        return ax
+        
 def visualize_gmm_weights(gmm):
     fig = plt.figure()
     gmm_count = np.size(gmm.weights)
-    print(gmm.weights)
+    #print(gmm.weights)
     plt.bar(np.arange(0,gmm_count), gmm.weights)
     plt.show()
 
 def visualize_colored_samples(gmm):
-    print(np.size)
+    #print(np.size)
     for i in np.arange(0, len(gmm.samples)):
         visualize_pc
