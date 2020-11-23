@@ -11,12 +11,14 @@ class gmm:
         self.samples = []
         self.sample_labels = []
 
-    def simple_pc_gmm(self, pc, n = 100, recompute = True, path = None):
+    def pc_simple_gmm(self, pc, n = 100, recompute = True, path = None):
         # pc of type o3d.geometry.pointcloud
         if recompute:
             self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n)
-            print("starting gmm_fit")
             self.num_train_points = len(pc.points)
+
+            print("starting gmm_fit with num_points = ", self.num_train_points)
+
             self.gmm_generator.fit(pc.points)
 
             self.means = self.gmm_generator.means_
@@ -34,6 +36,8 @@ class gmm:
                 pickle_in.close()
                 self.__dict__.update(tmp_dict)
 
+    def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None):
+        pass
 
     def sample(self, n_points = 1000):
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)

@@ -16,22 +16,25 @@ tmp_gmm_file = data_folder + "/tmp/tmp_gmm"
 
 directGMM_folder = home + "/semester_project"
 
+model_scaling = 10.0
+# Note: Bunny is 150x50x120cm so factor 10 should work
+cov_scale = 2.0
+
 def main():
 
     #required functionality
         # load measurement
         # (disrupt measurement)
-    measurement_pc = load_bunny_measurement()
+    measurement_pc = load_measurement(bunny_point_cloud_file, model_scaling)
 
     measurement_gmm = gmm()
-    measurement_gmm.simple_pc_gmm(measurement_pc, n = 70,
-                      recompute = False, path = tmp_gmm_file)
+    measurement_gmm.pc_simple_gmm(measurement_pc, n = 20, recompute = True,
+                                  path = tmp_gmm_file)
     measurement_gmm.sample()
-
     # load mesh
         # (localize (rough) mesh location)
         # TODO: use directGMM()
-    prior_mesh = load_bunny_mesh()
+    prior_mesh = load_mesh(bunny_mesh_file, model_scaling)
     prior_pc = sample_points(prior_mesh)
 
     # compute registration
@@ -46,19 +49,26 @@ def main():
         #some magic stuff
     ref_mesh = copy.deepcopy(prior_mesh)
 
-    eval_quality(ref_mesh, prior_mesh)
+    #eval_quality(ref_mesh, prior_mesh)
 
     # visualize gmmm
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
     #mpl_visualize(measurement_pc, prior_mesh, measurement_registered)
-    #mpl_visualize(measurement_gmm)
-    visualize_gmm_weights(measurement_gmm)
+    mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)
 
-def load_bunny_measurement():
-    return o3d.io.read_point_cloud(bunny_point_cloud_file)
+    #visualize_gmm_weights(measurement_gmm)
 
-def load_bunny_mesh():
-    return o3d.io.read_triangle_mesh(bunny_mesh_file)
+def load_measurement(path, scale):
+    pc = o3d.io.read_point_cloud(bunny_point_cloud_file)
+    return scale_o3d_object(pc, scale)
+
+def load_mesh(path, scale):
+    mesh = o3d.io.read_triangle_mesh(bunny_mesh_file)
+    return scale_o3d_object(mesh, scale)
+
+def scale_o3d_object(object, scale, scaling_center = np.zeros((3,1))):
+    scaling_center = np.zeros((3,1))
+    return object.scale(model_scaling, scaling_center)
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)
@@ -66,11 +76,9 @@ def sample_points(mesh, n_points = 10000):
 def eval_quality(true_mesh, meas_mesh):
     #pseudo shift
     vertices = np.asarray(meas_mesh.vertices)
-    # check bunny orientation!
-    vertices[:,1] = vertices[:,1] + 0.5
+    #vertices[:,1] = vertices[:,1] + 0.5
 
     faces = np.asarray(meas_mesh.triangles)
-    print(vertices.shape, faces.shape)
 
     eval_mesh = trimesh.Trimesh(vertices=vertices.tolist(),
                                 faces = faces.tolist())
@@ -79,9 +87,9 @@ def eval_quality(true_mesh, meas_mesh):
         eval_mesh.nearest.on_surface(true_pc.points)
 
     #print("Eval results:\n", closest_points, distances, triangle_id)
-    print("Eval results:\n", distances)
-
-    print(np.mean(distances))
+    #print("Eval results:\n", type(distances))
+    print("Eval results:\n", np.sort(distances)[:5])
+    #print(np.mean(distances))
 
 if __name__ == "__main__":
     main()
