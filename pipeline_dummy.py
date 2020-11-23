@@ -2,9 +2,9 @@
 import open3d as o3d
 from os.path import expanduser
 
-from lib.gmm_generation import gmm, simple_pc_gmm
+from lib.gmm_generation import gmm
 from lib.registration import o3d_point_to_point_icp, transform_measurement
-from lib.visualization import mpl_visualize, o3d_visualize
+from lib.visualization import *
 
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
@@ -20,7 +20,11 @@ def main():
         # load measurement
         # (disrupt measurement)
     measurement_pc = load_bunny_measurement()
-    measurement_gmm = simple_pc_gmm(measurement_pc, n= 100, recompute = False, path = tmp_gmm_file)
+
+    measurement_gmm = gmm()
+    measurement_gmm.simple_pc_gmm(measurement_pc, n = 70,
+                      recompute = False, path = tmp_gmm_file)
+    measurement_gmm.sample()
 
     # load mesh
         # (localize (rough) mesh location)
@@ -31,18 +35,19 @@ def main():
     # compute registration
         # various tools
         # possibilities: icp, gmm_reg, etc.
-    transform = o3d_point_to_point_icp(measurement_pc, prior_pc)
+    #transform = o3d_point_to_point_icp(measurement_pc, prior_pc)
 
     #transform pc to the right spot
-    measurement_registered = transform_measurement(measurement_pc, transform)
+    #measurement_registered = transform_measurement(measurement_pc, transform)
 
     # perform refinement
         #some magic stuff
 
     # visualize gmmm
-    o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
-    mpl_visualize(measurement_pc, prior_mesh, measurement_registered)
-    mpl_visualize(measurement_gmm)
+    #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
+    #mpl_visualize(measurement_pc, prior_mesh, measurement_registered)
+    #mpl_visualize(measurement_gmm)
+    visualize_gmm_weights(measurement_gmm)
 
 def load_bunny_measurement():
     return o3d.io.read_point_cloud(bunny_point_cloud_file)
