@@ -3,7 +3,8 @@ import open3d as o3d
 from os.path import expanduser
 
 from lib.gmm_generation import gmm
-from lib.registration import o3d_point_to_point_icp, transform_measurement
+#from lib.registration import o3d_point_to_point_icp, transform_measurement
+from lib import registration
 from lib.visualization import *
 
 import trimesh
@@ -11,14 +12,16 @@ import trimesh
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4.ply"
-bunny_point_cloud_file = data_folder + "/bunny/data/bun045.ply" # create corrupted bunny
+bunny_point_cloud_file = data_folder + "/bunny/data/bun045.ply"
 tmp_gmm_file = data_folder + "/tmp/tmp_gmm"
 
-directGMM_folder = home + "/semester_project"
+directGMM_folder = home + "/semester_project/direct_gmm/mixture"
+hgmm_folder = home + "/semester_project/ \
+                      GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
 
 model_scaling = 10.0
 # Note: Bunny is 150x50x120cm so factor 10 should work
-cov_scale = 2.0
+cov_scale = 2.0 #95% quantile!
 
 def main():
 
@@ -28,22 +31,22 @@ def main():
     measurement_pc = load_measurement(bunny_point_cloud_file, model_scaling)
 
     measurement_gmm = gmm()
-    measurement_gmm.pc_simple_gmm(measurement_pc, n = 20, recompute = True,
+    measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
                                   path = tmp_gmm_file)
     measurement_gmm.sample()
     # load mesh
         # (localize (rough) mesh location)
-        # TODO: use directGMM()
+        # TODO: use/fix directGMM()
     prior_mesh = load_mesh(bunny_mesh_file, model_scaling)
     prior_pc = sample_points(prior_mesh)
 
     # compute registration
         # various tools
         # possibilities: icp, gmm_reg, etc.
-    #transform = o3d_point_to_point_icp(measurement_pc, prior_pc)
+    transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
 
     #transform pc to the right spot
-    #measurement_registered = transform_measurement(measurement_pc, transform)
+    measurement_registered = registration.transform_measurement(measurement_pc, transform)
 
     # perform refinement
         #some magic stuff

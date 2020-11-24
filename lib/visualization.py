@@ -90,7 +90,7 @@ def visualize_gmm(gmm, ax, show_mean = True, cov_scale = 1.0):
                  np.dot(cov_edited, target_vector)) + local_mean_rep
 
         ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
-                        linewidth=0, antialiased=True)
+                        linewidth=0.2, antialiased=True)
     return ax
 
 def visualize_gmm_weights(gmm):
