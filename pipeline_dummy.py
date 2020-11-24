@@ -38,20 +38,21 @@ def main():
         # (localize (rough) mesh location)
         # TODO: use/fix directGMM()
     prior_mesh = load_mesh(bunny_mesh_file, model_scaling)
-    prior_pc = sample_points(prior_mesh)
+    prior_pc = sample_points(prior_mesh) # for final mesh evaluation
 
     # compute registration
         # various tools
         # possibilities: icp, gmm_reg, etc.
-    transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
+    #transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
 
     #transform pc to the right spot
-    measurement_registered = registration.transform_measurement(measurement_pc, transform)
+    #measurement_registered = registration.transform_measurement(measurement_pc, transform)
 
     # perform refinement
         #some magic stuff
-    ref_mesh = copy.deepcopy(prior_mesh)
 
+    # evaluate mesh
+    #ref_mesh = copy.deepcopy(prior_mesh)
     #eval_quality(ref_mesh, prior_mesh)
 
     # visualize gmmm

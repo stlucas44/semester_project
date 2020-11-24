@@ -67,9 +67,9 @@ def visualize_gmm(gmm, ax, show_mean = True, cov_scale = 1.0):
         # quadric: (x-v)' * cov * (x-v) = 1
         # parametric representation
         # source: https://en.wikipedia.org/wiki/Ellipsoid#:~:text=An%20ellipsoid%20has%20three%20pairwise,simply%20axes%20of%20the%20ellipsoid.
-        ellipse_resolution = 1.0
-        phi = np.asarray([np.arange(0.0,2.0 * np.pi,ellipse_resolution)])
-        theta = np.asarray([np.arange(-0.5 * np.pi, 0.5 * np.pi, 0.5 * ellipse_resolution)])
+        ellipse_resolution = 20
+        phi = np.asarray([np.linspace(0.0,2.0 * np.pi,ellipse_resolution)])
+        theta = np.asarray([np.linspace(-0.5 * np.pi, 0.5 * np.pi,int(ellipse_resolution/2))])
 
         # build range for parameters
         coscos = np.cos(theta.T) * np.cos(phi)
@@ -88,9 +88,38 @@ def visualize_gmm(gmm, ax, show_mean = True, cov_scale = 1.0):
         cov_edited = np.dot(eigenvecs, np.diag(np.sqrt(eigenvals)))
         points = np.dot(np.diag([cov_scale, cov_scale, cov_scale]),
                  np.dot(cov_edited, target_vector)) + local_mean_rep
+        points_centered = np.dot(np.diag([cov_scale, cov_scale, cov_scale]),
+                 np.dot(cov_edited, target_vector))
 
-        ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
-                        linewidth=0.2, antialiased=True)
+        fancy = 2
+        if fancy ==1:
+            norm_mat =  np.asarray([np.cross(cov_edited[:,1], cov_edited[:,2]),
+                                   np.cross(cov_edited[:,2], cov_edited[:,0]),
+                                   np.cross(cov_edited[:,0], cov_edited[:,1])])
+            normals = np.dot(norm_mat, target_vector)
+
+            ellipse_pc = o3d.geometry.PointCloud()
+            ellipse_pc.points = o3d.utility.Vector3dVector(points.T)
+            ellipse_pc.normals = o3d.utility.Vector3dVector(normals.T)
+            mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(
+                ellipse_pc, depth=9)
+
+            print(np.asarray(mesh.triangles))
+            ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
+                            triangles = np.asarray(mesh.triangles),
+                            linewidth=0.2, antialiased=True)
+
+        elif fancy ==2:
+            #create convex hull with qHull
+            hull = scipy.spatial.ConvexHull(points_centered.T)
+            ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
+                            triangles = hull.vertices,
+                            linewidth=0.2, antialiased=True)
+
+        else:
+            ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
+                            linewidth=0.2, antialiased=True)
+
     return ax
 
 def visualize_gmm_weights(gmm):
