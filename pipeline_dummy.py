@@ -25,15 +25,15 @@ cov_scale = 2.0 #95% quantile!
 
 def main():
 
-    #required functionality
-        # load measurement
-        # (disrupt measurement)
+    # load measurement and (disrupt measurement)
     measurement_pc = load_measurement(bunny_point_cloud_file, model_scaling)
 
+    #fit gmm
     measurement_gmm = gmm()
     measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
                                   path = tmp_gmm_file)
-    measurement_gmm.sample()
+    measurement_gmm.sample_from_gmm()
+
     # load mesh
         # (localize (rough) mesh location)
         # TODO: use/fix directGMM()
@@ -52,13 +52,14 @@ def main():
         #some magic stuff
 
     # evaluate mesh
-    #ref_mesh = copy.deepcopy(prior_mesh)
-    #eval_quality(ref_mesh, prior_mesh)
+    ref_mesh = copy.deepcopy(prior_mesh)
+    error_mesh = eval_quality(ref_mesh, prior_mesh)
 
     # visualize gmmm
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
     #mpl_visualize(measurement_pc, prior_mesh, measurement_registered)
-    mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)
+    #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)
+    mpl_visualize(error_mesh)
 
     #visualize_gmm_weights(measurement_gmm)
 
@@ -77,7 +78,7 @@ def scale_o3d_object(object, scale, scaling_center = np.zeros((3,1))):
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)
 
-def eval_quality(true_mesh, meas_mesh):
+def eval_quality(true_mesh, meas_mesh, num_points = 500):
     #pseudo shift
     vertices = np.asarray(meas_mesh.vertices)
     #vertices[:,1] = vertices[:,1] + 0.5
@@ -86,7 +87,7 @@ def eval_quality(true_mesh, meas_mesh):
 
     eval_mesh = trimesh.Trimesh(vertices=vertices.tolist(),
                                 faces = faces.tolist())
-    true_pc = sample_points(true_mesh, 500)
+    true_pc = sample_points(true_mesh, num_points)
     (closest_points, distances, triangle_id) = \
         eval_mesh.nearest.on_surface(true_pc.points)
 
@@ -94,6 +95,16 @@ def eval_quality(true_mesh, meas_mesh):
     #print("Eval results:\n", type(distances))
     print("Eval results:\n", np.sort(distances)[:5])
     #print(np.mean(distances))
+
+    #create new pc
+    error_pc = o3d.geometry.PointCloud()
+    sampled_points = np.asarray(true_pc.points)
+
+    print(np.shape(sampled_points))
+    sampled_points[:,2] = distances
+    error_pc.points = o3d.utility.Vector3dVector(sampled_points)
+
+    return error_pc
 
 if __name__ == "__main__":
     main()

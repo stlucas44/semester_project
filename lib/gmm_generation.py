@@ -39,5 +39,5 @@ class gmm:
     def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None):
         pass
 
-    def sample(self, n_points = 1000):
+    def sample_from_gmm(self, n_points = 1000):
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)

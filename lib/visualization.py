@@ -111,7 +111,9 @@ def visualize_gmm(gmm, ax, show_mean = True, cov_scale = 1.0):
 
         elif fancy ==2:
             #create convex hull with qHull
-            hull = scipy.spatial.ConvexHull(points_centered.T)
+            #hull = scipy.spatial.ConvexHull(points_centered.T)
+            hull = scipy.spatial.ConvexHull(points.T)
+
             ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
                             triangles = hull.vertices,
                             linewidth=0.2, antialiased=True)
