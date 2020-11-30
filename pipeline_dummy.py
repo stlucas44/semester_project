@@ -13,6 +13,7 @@ home = expanduser("~")
 data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4.ply"
 bunny_point_cloud_file = data_folder + "/bunny/data/bun045.ply"
+cube_file = "test_cube.ply"
 tmp_gmm_file = data_folder + "/tmp/tmp_gmm"
 
 directGMM_folder = home + "/semester_project/direct_gmm/mixture"

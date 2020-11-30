@@ -35,14 +35,26 @@ def mpl_visualize(*obj, cov_scale = 1.0):
     ax.set_zlabel('Z axis')
     plt.show()
 
-def visualize_mesh(mesh, ax, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5):
+def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
     vertices = np.asarray(mesh.vertices)
     triangles = np.asarray(mesh.triangles)
     ax.plot_trisurf(vertices[:,0],vertices[:,1] , vertices[:,2],
                     triangles= triangles, linewidth=linewidth, antialiased=True,
                     alpha = alpha, label= label, color = c)
+    if show:
+        plt.show()
+
     return ax
-def visualize_pc(pc, ax):
+
+def visualize_pc(pc, ax = None, show = False):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
     points = np.asarray(pc.points)
 
     max_point_nr = 1000
@@ -53,12 +65,17 @@ def visualize_pc(pc, ax):
                alpha = 0.7, label= "point cloud")
     return ax
 
-def visualize_gmm(gmm, ax, show_mean = True, cov_scale = 1.0):
+def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = False):
+    if ax is None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+
     if show_mean:
         centers = gmm.means
         ax.scatter(centers[1:-1,0], centers[1:-1,1],
                    centers[1:-1,2], c = 'g', s = 10.0, alpha = 0.7,
                    label= "gmm")
+
     for i in range(0,len(gmm.means)):
         local_cov = np.asarray(gmm.covariances[i])
         local_mean = np.asarray(gmm.means[i])
@@ -121,6 +138,9 @@ def visualize_gmm(gmm, ax, show_mean = True, cov_scale = 1.0):
         else:
             ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
                             linewidth=0.2, antialiased=True)
+
+        if show:
+            plt.show()
 
     return ax
 
