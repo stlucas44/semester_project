@@ -20,7 +20,7 @@ hgmm_folder = home + "/semester_project/ \
                       GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
 
 model_scaling = 10.0
-# Note: Bunny is 150x50x120cm so factor 10 should work
+# Note: Bunny is 150x50x120mm so factor 10 should work
 cov_scale = 2.0 #95% quantile!
 
 def main():
