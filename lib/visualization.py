@@ -136,7 +136,7 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
                             linewidth=0.2, antialiased=True)
 
         else:
-            ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
+            ax.plot_surface(points[0,:],points[1,:], points[2,:],
                             linewidth=0.2, antialiased=True)
 
         if show:

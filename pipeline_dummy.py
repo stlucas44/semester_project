@@ -35,10 +35,13 @@ def main():
                                   path = tmp_gmm_file)
     measurement_gmm.sample_from_gmm()
 
-    # load mesh
-        # (localize (rough) mesh location)
-        # TODO: use/fix directGMM()
+    # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file, model_scaling)
+
+    # fit via direct gmm
+    prior_gmm = gmm()
+    prior_gmm.mesh_gmm(prior_mesh, n = 50, recompute = True)
+
     prior_pc = sample_points(prior_mesh) # for final mesh evaluation
 
     # compute registration
@@ -60,7 +63,7 @@ def main():
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
     #mpl_visualize(measurement_pc, prior_mesh, measurement_registered)
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)
-    mpl_visualize(error_mesh)
+    mpl_visualize(prior_gmm, cov_scale = cov_scale)
 
     #visualize_gmm_weights(measurement_gmm)
 
