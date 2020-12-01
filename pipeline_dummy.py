@@ -40,7 +40,7 @@ def main():
 
     # fit via direct gmm
     prior_gmm = gmm()
-    prior_gmm.mesh_gmm(prior_mesh, n = 50, recompute = True)
+    prior_gmm.mesh_gmm(prior_mesh, n = 100, recompute = True)
 
     prior_pc = sample_points(prior_mesh) # for final mesh evaluation
 
