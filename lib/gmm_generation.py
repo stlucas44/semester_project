@@ -1,3 +1,4 @@
+import copy
 import numpy as np
 import sklearn.mixture
 import sys
@@ -9,7 +10,7 @@ from mixture import GaussianMixture
 
 
 
-class gmm:
+class Gmm:
     def __init__(self, weights = [], means = [], covariances = []):
         self.num_train_points = 0
         self.weights = weights
@@ -44,7 +45,105 @@ class gmm:
                 pickle_in.close()
                 self.__dict__.update(tmp_dict)
 
-    def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None):
+    def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None, min_points = 100):
+        '''
+        approach:
+            object members:
+                pointcollection
+                overall weight
+                mean
+                var
+        for each pointcloud do:
+            fit gmm
+            assign points to mixture components
+            for each component:
+                get cov ratio
+                get mixture weight
+                if cov_ratio > k or too few points in mixture:
+                    add mixture component to final mixture
+                else:
+                    fill new object
+                    new weight = overall weight * mixture weight
+                    add object to new list
+
+        '''
+        class HgmmObject:
+            def __init__(self, points, weight, mean = None, cov = None):
+                self.points = points
+                self.curr_weight = weight
+                self.mean = mean
+                self.var = cov
+
+        all_points = np.asarray(pc.points)
+        init_object = HgmmObject(all_points, weight = 1.0)
+        min_eig_ratio = 50
+
+        if recompute:
+            # initialize list to iterate
+            curr_list = [init_object]
+            next_list = []
+
+            #list of components to iterate through
+            component_range = np.arange(0,n_h)
+
+            while(len(curr_list) > 0):
+                for sub_pc  in curr_list:
+                    #fit local gmm
+                    local_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+                    labels = local_generator.fit_predict(sub_pc.points)
+                    print("labels: ", labels[1:10], "   local_generator.weights_ ", local_generator.weights_)
+
+                    for i in component_range:
+                        mean = local_generator.means_[i, :]
+                        cov = local_generator.covariances_[i,:, :]
+                        weight = local_generator.weights_[i]
+
+                        #get member points of the mixture
+                        local_indexes = [i for i, x in enumerate(labels == i) if x]
+                        points = sub_pc.points[local_indexes, :]
+                        print("point shape: ", points.shape)
+
+                        #get eigenvalue ratio
+                        u, s, vt = np.linalg.svd(cov)
+
+                        num_points = len(local_indexes)
+
+                        if (s[0]/s[2] > min_eig_ratio and
+                           s[1]/s[2] > min_eig_ratio) or num_points < min_points:
+                           #print(" sufficiently flat!")
+
+                           self.means.append(mean)
+                           self.weights.append(weight)
+                           self.covariances.append(cov)
+                           print(np.asarray(self.means).shape)
+
+                        else:
+                           #print(" decompose this point cloud!")
+                           new_pc = HgmmObject(points, weight * sub_pc.curr_weight, mean = mean, cov = cov)
+                           next_list.append(new_pc)
+
+
+                        print("finished iteration")
+                curr_list = copy.deepcopy(next_list)
+                next_list = []
+
+            print("finished hgmm fit")
+            self.means = np.asarray(self.means)
+            self.weights = np.asarray(self.weights)
+            self.covariacns = np.asarray(self.covariances)
+
+
+            if path is not None:
+                pickle_out = open(path,"wb")
+                pickle.dump(self.__dict__, pickle_out)
+                pickle_out.close()
+
+        else:
+            if path is not None:
+                pickle_in = open(path,"rb")
+                tmp_dict = pickle.load(pickle_in)
+                pickle_in.close()
+                self.__dict__.update(tmp_dict)
         pass
 
     def mesh_gmm(self, init_mesh, n = 100, recompute = True, path = None, simple_fit = False):

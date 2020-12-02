@@ -4,7 +4,7 @@ import numpy as np
 import open3d as o3d
 import scipy
 
-from lib.gmm_generation import gmm
+from lib.gmm_generation import Gmm
 
 def o3d_visualize(*obj):
     #option: mesh_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
@@ -23,7 +23,7 @@ def mpl_visualize(*obj, cov_scale = 1.0):
             #print("pc detected")
             visualize_pc(element, ax)
 
-        elif type(element) == type(gmm()):
+        elif type(element) == type(Gmm()):
             #print("gmm detected")
             visualize_gmm(element, ax, cov_scale = cov_scale)
 
@@ -76,7 +76,7 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
                    centers[1:-1,2], c = 'g', s = 10.0, alpha = 0.7,
                    label= "gmm")
     #colors = plt.cm.Pastel1(np.arange(0,gm_count)/(gm_count))
-    
+
     gm_count = len(gmm.means)
     for i in range(0,gm_count):
         local_cov = np.asarray(gmm.covariances[i])
