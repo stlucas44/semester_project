@@ -6,6 +6,7 @@ from lib.gmm_generation import Gmm
 #from lib.registration import o3d_point_to_point_icp, transform_measurement
 from lib import registration
 from lib.visualization import *
+from lib import merge
 
 import trimesh
 
@@ -14,7 +15,7 @@ data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4.ply"
 bunny_point_cloud_file = data_folder + "/bunny/data/bun045.ply"
 cube_file = "test_cube.ply"
-tmp_gmm_file = data_folder + "/tmp/tmp_gmm"
+tmp_gmm_file = data_folder + "/tmp/tmp_measurement_gmm"
 
 directGMM_folder = home + "/semester_project/direct_gmm/mixture"
 hgmm_folder = home + "/semester_project/ \
@@ -25,51 +26,59 @@ model_scaling = 10.0
 cov_scale = 2.0 #95% quantile!
 
 def main():
-
+    ##### process measurement
     # load measurement and (disrupt measurement)
     measurement_pc = load_measurement(bunny_point_cloud_file, model_scaling)
+    #TODO set cam location!
 
     #fit gmm
     measurement_gmm = Gmm()
-
-    measurement_gmm.pc_hgmm(measurement_pc)
-
     #measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
     #                              path = tmp_gmm_file)
+    #measurement_gmm.pc_hgmm(measurement_pc)
+    #measurement_gmm.sample_from_gmm()
 
-    measurement_gmm.sample_from_gmm()
 
+
+    ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file, model_scaling)
 
     # fit via direct gmm
-    prior_gmm = Gmm()
-    prior_gmm.mesh_gmm(prior_mesh, n = 100, recompute = True)
+    #prior_gmm = Gmm()
+    #prior_gmm.mesh_gmm(prior_mesh, n = 100, recompute = True)
+    prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation
 
-    prior_pc = sample_points(prior_mesh) # for final mesh evaluation
-
+    ##### register and merge
     # compute registration
         # various tools
         # possibilities: icp, gmm_reg, etc.
-    #transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
+    transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
 
     #transform pc to the right spot
-    #measurement_registered = registration.transform_measurement(measurement_pc, transform)
+    measurement_registered = registration.transform_measurement(measurement_pc, transform)
+    measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_file, recompute = False)
 
     # perform refinement
-        #some magic stuff
+    print("before entering gmm_merge")
+    merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
 
     # evaluate mesh
-    ref_mesh = copy.deepcopy(prior_mesh)
-    error_mesh = eval_quality(ref_mesh, prior_mesh)
+    #ref_mesh = copy.deepcopy(prior_mesh)
+    #error_mesh = eval_quality(ref_mesh, prior_mesh)
 
-    # visualize gmmm
+    print("back to main")
+
+
+    ##### visualize
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
-    #mpl_visualize(measurement_pc, prior_mesh, measurement_registered)
-    #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)
-    
-    mpl_visualize(measurement_gmm, cov_scale = cov_scale)
+    #mpl_visualize(measurement_pc, prior_mesh, measurement_registered) #registration
+    #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
+    #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
+    #mpl_visualize(prior_gmm, cov_scale = cov_scale)
+    mpl_visualize(merged_pc)
 
+    #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
 
 
