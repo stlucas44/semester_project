@@ -13,12 +13,16 @@ from mixture import GaussianMixture
 class Gmm:
     def __init__(self, weights = [], means = [], covariances = []):
         self.num_train_points = 0
+        self.num_gaussians = 0
         self.weights = weights
         self.means = means
         self.covariances = covariances
+        self.precs = []
+        self.precs_chol = []
         self.gmm_generator = []
         self.samples = []
         self.sample_labels = []
+        self.gmm_type = 0 # 1 =
 
     def pc_simple_gmm(self, pc, n = 100, recompute = True, path = None):
         # pc of type o3d.geometry.pointcloud
@@ -37,6 +41,7 @@ class Gmm:
                 pickle_out = open(path,"wb")
                 pickle.dump(self.__dict__, pickle_out)
                 pickle_out.close()
+                print("wrote model to ", path)
 
         else:
             if path is not None:
@@ -91,7 +96,7 @@ class Gmm:
                     #fit local gmm
                     local_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
                     labels = local_generator.fit_predict(sub_pc.points)
-                    print("labels: ", labels[1:10], "   local_generator.weights_ ", local_generator.weights_)
+                    #print("labels: ", labels[1:10], "   local_generator.weights_ ", local_generator.weights_)
 
                     for i in component_range:
                         mean = local_generator.means_[i, :]
@@ -101,7 +106,7 @@ class Gmm:
                         #get member points of the mixture
                         local_indexes = [i for i, x in enumerate(labels == i) if x]
                         points = sub_pc.points[local_indexes, :]
-                        print("point shape: ", points.shape)
+                        #print("point shape: ", points.shape)
 
                         #get eigenvalue ratio
                         u, s, vt = np.linalg.svd(cov)
@@ -112,10 +117,15 @@ class Gmm:
                            s[1]/s[2] > min_eig_ratio) or num_points < min_points:
                            #print(" sufficiently flat!")
 
+
+
                            self.means.append(mean)
                            self.weights.append(weight)
                            self.covariances.append(cov)
-                           print(np.asarray(self.means).shape)
+                           self.precs.append(local_generator.precisions_[i, :, :])
+                           self.precs_chol.append(local_generator.precisions_cholesky_[i, : , :])
+
+                           #print(np.asarray(self.means).shape)
 
                         else:
                            #print(" decompose this point cloud!")
@@ -123,15 +133,25 @@ class Gmm:
                            next_list.append(new_pc)
 
 
-                        print("finished iteration")
+                        #print("finished iteration")
                 curr_list = copy.deepcopy(next_list)
                 next_list = []
 
             print("finished hgmm fit")
+            print("Resulted in : ", len(self.means), " mixtures")
+            self.num_gaussians = len(self.means)
             self.means = np.asarray(self.means)
             self.weights = np.asarray(self.weights)
-            self.covariacns = np.asarray(self.covariances)
+            self.covariances = np.asarray(self.covariances)
+            self.precs = np.asarray(self.precs)
+            self.precs_chol = np.asarray(self.precs_chol)
 
+            self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+            self.gmm_generator.means_ = self.means
+            self.gmm_generator.weights_ = self.weights
+            self.gmm_generator.covariances_ = self.covariances
+            self.gmm_generator.precisions_ = self.precs
+            self.gmm_generator.precisions_cholesky_ = self.precs_chol
 
             if path is not None:
                 pickle_out = open(path,"wb")
@@ -205,7 +225,6 @@ class Gmm:
 
     def sample_from_gmm(self, n_points = 1000):
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
-
 
 # direct gmm helper methods:
 def get_centroids(mesh):
