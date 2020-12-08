@@ -2,7 +2,7 @@ import copy
 import numpy as np
 import open3d as o3d
 
-def o3d_point_to_point_icp(source, target,threshold = 0.02,
+def o3d_point_to_point_icp(source, target,threshold = 1.0,
                           trans_init = np.identity(4)):
     # from: http://www.open3d.org/docs/0.9.0/tutorial/Basic/icp_registration.html
     print("Apply point-to-point ICP")

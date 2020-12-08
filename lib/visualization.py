@@ -10,18 +10,31 @@ def o3d_visualize(*obj):
     #option: mesh_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
     o3d.visualization.draw_geometries(obj)
 
-def mpl_visualize(*obj, cov_scale = 1.0):
+def mpl_visualize(*obj, cov_scale = 1.0, colors = None):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
+    if colors is None:
+        colors = len(obj) * [None]
+        print(colors)
+
+    iterator = 0
     for element in obj:
         if type(element) == type(o3d.geometry.TriangleMesh()):
+            if colors[iterator] is None:
+                color = 'b'
+            else:
+                color = colors[iterator]
             #print("mesh detected")
-            visualize_mesh(element, ax)
+            visualize_mesh(element, ax, c = color)
 
         elif type(element) == type( o3d.geometry.PointCloud()):
+            if colors[iterator] is None:
+                color = 'r'
+            else:
+                color = colors[iterator]
             #print("pc detected")
-            visualize_pc(element, ax)
+            visualize_pc(element, ax,  c = color)
 
         elif type(element) == type(Gmm()):
             #print("gmm detected")
@@ -29,6 +42,7 @@ def mpl_visualize(*obj, cov_scale = 1.0):
 
         else:
             print("unkown type detected: " + type(element))
+        iterator = iterator + 1
 
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
@@ -50,7 +64,7 @@ def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewi
 
     return ax
 
-def visualize_pc(pc, ax = None, show = False):
+def visualize_pc(pc, ax = None, show = False, c = 'r'):
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -61,7 +75,7 @@ def visualize_pc(pc, ax = None, show = False):
     step = max((len(points)//max_point_nr), 1)
 
     ax.scatter(points[1:-1:step,0], points[1:-1:step,1],
-               points[1:-1:step,2], c = 'r', s =0.5,
+               points[1:-1:step,2], c = c, s =0.5,
                alpha = 0.7, label= "point cloud")
     return ax
 

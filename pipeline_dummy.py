@@ -51,7 +51,6 @@ def main():
 
     ##### register and merge
     # compute registration
-        # various tools
         # possibilities: icp, gmm_reg, etc.
     transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
 
@@ -60,23 +59,20 @@ def main():
     measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_file, recompute = False)
 
     # perform refinement
-    print("before entering gmm_merge")
     merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
     #error_mesh = eval_quality(ref_mesh, prior_mesh)
 
-    print("back to main")
-
-
     ##### visualize
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
-    #mpl_visualize(measurement_pc, prior_mesh, measurement_registered) #registration
+    mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
     #mpl_visualize(prior_gmm, cov_scale = cov_scale)
-    mpl_visualize(merged_pc)
+    mpl_visualize(merged_pc, measurement_registered, measurement_pc, colors = ['r', 'g', 'b'],#measurement_gmm,
+                  cov_scale = cov_scale)
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)

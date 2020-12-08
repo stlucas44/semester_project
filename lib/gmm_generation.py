@@ -72,6 +72,7 @@ class Gmm:
                     add object to new list
 
         '''
+        # defining small class for better handling
         class HgmmObject:
             def __init__(self, points, weight, mean = None, cov = None):
                 self.points = points
@@ -116,8 +117,6 @@ class Gmm:
                         if (s[0]/s[2] > min_eig_ratio and
                            s[1]/s[2] > min_eig_ratio) or num_points < min_points:
                            #print(" sufficiently flat!")
-
-
 
                            self.means.append(mean)
                            self.weights.append(weight)
