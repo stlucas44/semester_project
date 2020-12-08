@@ -121,7 +121,7 @@ class Gmm:
                            #print(" sufficiently flat!")
 
                            self.means.append(mean)
-                           self.weights.append(weight)
+                           self.weights.append(weight * sub_pc.curr_weight)
                            self.covariances.append(cov)
                            self.precs.append(local_generator.precisions_[i, :, :])
                            self.precs_chol.append(local_generator.precisions_cholesky_[i, : , :])
