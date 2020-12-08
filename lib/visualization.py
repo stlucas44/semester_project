@@ -87,7 +87,7 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
     if show_mean:
         centers = gmm.means
         ax.scatter(centers[1:-1,0], centers[1:-1,1],
-                   centers[1:-1,2], c = 'g', s = 10.0, alpha = 0.7,
+                   centers[1:-1,2], c = 'g', s = 5.0, alpha = 0.7,
                    label= "gmm")
     #colors = plt.cm.Pastel1(np.arange(0,gm_count)/(gm_count))
 
@@ -129,7 +129,7 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
 
             ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
                             triangles = hull.vertices,
-                            linewidth=0.2, antialiased=True, color= colors[i])
+                            linewidth=0.2, antialiased=False, color= colors[i])
 
         else:
             rx, ry, rz = cov_scale*np.sqrt(s)#s#1/np.sqrt(coefs)

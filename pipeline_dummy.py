@@ -5,15 +5,17 @@ from os.path import expanduser
 from lib.gmm_generation import Gmm
 #from lib.registration import o3d_point_to_point_icp, transform_measurement
 from lib import registration
+from lib.loader import *
 from lib.visualization import *
 from lib import merge
+
 
 import trimesh
 
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
-bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4.ply"
-bunny_point_cloud_file = data_folder + "/bunny/data/bun045.ply"
+bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
+bunny_point_cloud_file = data_folder + "/bunny/data/bun045_large.ply"
 cube_file = "test_cube.ply"
 tmp_gmm_file = data_folder + "/tmp/tmp_measurement_gmm"
 
@@ -28,7 +30,7 @@ cov_scale = 2.0 #95% quantile!
 def main():
     ##### process measurement
     # load measurement and (disrupt measurement)
-    measurement_pc = load_measurement(bunny_point_cloud_file, model_scaling)
+    measurement_pc = load_measurement(bunny_point_cloud_file)
     #TODO set cam location!
 
     #fit gmm
@@ -42,7 +44,7 @@ def main():
 
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
-    prior_mesh = load_mesh(bunny_mesh_file, model_scaling)
+    prior_mesh = load_mesh(bunny_mesh_file)
 
     # fit via direct gmm
     #prior_gmm = Gmm()
@@ -71,24 +73,11 @@ def main():
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
     #mpl_visualize(prior_gmm, cov_scale = cov_scale)
-    mpl_visualize(merged_pc, measurement_registered, measurement_pc, colors = ['r', 'g', 'b'],#measurement_gmm,
+    mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
                   cov_scale = cov_scale)
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
-
-
-def load_measurement(path, scale):
-    pc = o3d.io.read_point_cloud(bunny_point_cloud_file)
-    return scale_o3d_object(pc, scale)
-
-def load_mesh(path, scale):
-    mesh = o3d.io.read_triangle_mesh(bunny_mesh_file)
-    return scale_o3d_object(mesh, scale)
-
-def scale_o3d_object(object, scale, scaling_center = np.zeros((3,1))):
-    scaling_center = np.zeros((3,1))
-    return object.scale(model_scaling, scaling_center)
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)

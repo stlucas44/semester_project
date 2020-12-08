@@ -83,6 +83,8 @@ class Gmm:
         all_points = np.asarray(pc.points)
         init_object = HgmmObject(all_points, weight = 1.0)
         min_eig_ratio = 50
+        #stop_condition = lambda l1, l2, l3, num_points: (s[0]/s[2] > min_eig_ratio and
+        #   s[1]/s[2] > min_eig_ratio) or num_points < min_points
 
         if recompute:
             # initialize list to iterate

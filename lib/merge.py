@@ -7,7 +7,7 @@ from lib import gmm_generation
 import open3d as o3d
 
 
-def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-7, min_sample_density = []):
+def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-4, min_sample_density = []):
     # the approach is simply to merge a point cloud with a gmm
     # assuming we have a nice registration
 
@@ -19,7 +19,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-7, min_sample_density = []):
     # assign points
     pc_membership = gmm.gmm_generator.predict(points)
     pc_membership_prob = gmm.gmm_generator.predict_proba(points)
-    
+
     # get likelihood for each point
     member_range = range(1,gmm.num_gaussians)
     point_member_list = np.empty((1,3))
@@ -36,7 +36,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-7, min_sample_density = []):
         if isinstance(likelihoods, np.floating):
             continue
         reduced_points = associated_points[likelihoods > min_prob, :]
-        print("reduced point shape: ", np.shape(reduced_points))
+        #print("reduced point shape: ", np.shape(reduced_points))
 
         if len(reduced_points) > 0:
             point_member_list = np.append(point_member_list, reduced_points, axis = 0) #.append(reduced_points)
@@ -47,10 +47,9 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-7, min_sample_density = []):
     # sample points when there are too few according to gmm dist!
 
     '''
-        print("memberships: ", pc_membership[1:10])
-        print("probabilities: ", pc_membership_prob[1:5,1:10])
-        print("pc_membership_prob:  ", (np.sum(pc_membership_prob[1,:])))
-        print("merge finished")
+    print("memberships: ", pc_membership[1:10])
+    print("probabilities: ", pc_membership_prob[1:5,1:10])
+    print("pc_membership_prob:  ", (np.sum(pc_membership_prob[1,:])))
+    print("merge finished")
     '''
     return return_pc
-    #return return_pc
