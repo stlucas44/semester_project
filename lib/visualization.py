@@ -64,7 +64,8 @@ def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewi
 
     return ax
 
-def visualize_pc(pc, ax = None, show = False, c = 'r'):
+def visualize_pc(pc, ax = None, sensor_origin = None,
+                     show = False, c = 'r'):
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -77,6 +78,13 @@ def visualize_pc(pc, ax = None, show = False, c = 'r'):
     ax.scatter(points[1:-1:step,0], points[1:-1:step,1],
                points[1:-1:step,2], c = c, s =0.5,
                alpha = 0.7, label= "point cloud")
+    if sensor_origin is not None:
+        ax.scatter(sensor_origin[0], sensor_origin[1], sensor_origin[2], c = "b", s = 2.0,
+        alpha = 0.7, label= "sensor_pos")
+
+    if show:
+        plt.show()
+
     return ax
 
 def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = False):

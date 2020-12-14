@@ -9,7 +9,6 @@ from lib.loader import *
 from lib.visualization import *
 from lib import merge
 
-
 import trimesh
 
 home = expanduser("~")
@@ -31,7 +30,8 @@ def main():
     ##### process measurement
     # load measurement and (disrupt measurement)
     measurement_pc = load_measurement(bunny_point_cloud_file)
-    #TODO set cam location!
+    #TODO set (or get) cam pos and quat!
+    measurement_origin = [0.0, 1.0, 3.0]
 
     #fit gmm
     measurement_gmm = Gmm()
@@ -39,8 +39,6 @@ def main():
     #                              path = tmp_gmm_file)
     #measurement_gmm.pc_hgmm(measurement_pc)
     #measurement_gmm.sample_from_gmm()
-
-
 
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
@@ -61,7 +59,7 @@ def main():
     measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_file, recompute = False)
 
     # perform refinement
-    merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
+    #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
@@ -69,12 +67,14 @@ def main():
 
     ##### visualize
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
-    mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
+    #mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
     #mpl_visualize(prior_gmm, cov_scale = cov_scale)
-    mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
-                  cov_scale = cov_scale)
+    #mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
+    #              cov_scale = cov_scale)
+    mpl_visualize(measurement_pc)
+    visualize_pc(measurement_pc, sensor_origin = measurement_origin, show = True)
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
