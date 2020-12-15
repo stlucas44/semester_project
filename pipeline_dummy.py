@@ -22,8 +22,6 @@ directGMM_folder = home + "/semester_project/direct_gmm/mixture"
 hgmm_folder = home + "/semester_project/ \
                       GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
 
-model_scaling = 10.0
-# Note: Bunny is 150x50x120mm so factor 10 should work
 cov_scale = 2.0 #95% quantile!
 
 def main():
@@ -32,7 +30,7 @@ def main():
     measurement_pc = load_measurement(bunny_point_cloud_file)
     #TODO set (or get) cam pos and quat!
     sensor_position_enu = [0.0, 1.0, 3.0]
-    sensor_rpy = [0.0, -90.0, 90.0]
+    sensor_rpy = [0.0, 90.0, 90.0]
     sensor_quaternion = []
     sensor_fov = [100, 85]
     range = 6.0
