@@ -135,7 +135,6 @@ class Gmm:
                            new_pc = HgmmObject(points, weight * sub_pc.curr_weight, mean = mean, cov = cov)
                            next_list.append(new_pc)
 
-
                         #print("finished iteration")
                 curr_list = copy.deepcopy(next_list)
                 next_list = []

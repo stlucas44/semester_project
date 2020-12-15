@@ -31,10 +31,17 @@ def main():
     # load measurement and (disrupt measurement)
     measurement_pc = load_measurement(bunny_point_cloud_file)
     #TODO set (or get) cam pos and quat!
-    measurement_origin = [0.0, 1.0, 3.0]
+    sensor_position_enu = [0.0, 1.0, 3.0]
+    sensor_rpy = [0.0, -90.0, 90.0]
+    sensor_quaternion = []
+    sensor_fov = [100, 85]
+    range = 6.0
+    angular_resolution = 0.3
+
 
     #fit gmm
     measurement_gmm = Gmm()
+
     #measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
     #                              path = tmp_gmm_file)
     #measurement_gmm.pc_hgmm(measurement_pc)
@@ -43,6 +50,10 @@ def main():
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
+    new_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
+                                   sensor_rpy, sensor_max_range = range,
+                                   sensor_fov = sensor_fov,
+                                   angular_resolution = angular_resolution)
 
     # fit via direct gmm
     #prior_gmm = Gmm()
@@ -67,14 +78,14 @@ def main():
 
     ##### visualize
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
-    #mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
+    mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
     #mpl_visualize(prior_gmm, cov_scale = cov_scale)
     #mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
     #              cov_scale = cov_scale)
-    mpl_visualize(measurement_pc)
-    visualize_pc(measurement_pc, sensor_origin = measurement_origin, show = True)
+    #mpl_visualize(measurement_pc)
+    #visualize_pc(measurement_pc, sensor_origin = sensor_position_enu, show = True)
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
