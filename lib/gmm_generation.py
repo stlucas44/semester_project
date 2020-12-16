@@ -8,7 +8,13 @@ import pymesh
 sys.path.append('/home/lucas/semester_project/direct_gmm') # TODO(stlucas) find solution for this!
 from mixture import GaussianMixture
 
-
+# defining small class for better handling
+class HgmmHelper:
+    def __init__(self, points, weight, mean = None, cov = None):
+        self.points = points
+        self.curr_weight = weight
+        self.mean = mean
+        self.var = cov
 
 class Gmm:
     def __init__(self, weights = [], means = [], covariances = []):
@@ -72,16 +78,9 @@ class Gmm:
                     add object to new list
 
         '''
-        # defining small class for better handling
-        class HgmmObject:
-            def __init__(self, points, weight, mean = None, cov = None):
-                self.points = points
-                self.curr_weight = weight
-                self.mean = mean
-                self.var = cov
 
         all_points = np.asarray(pc.points)
-        init_object = HgmmObject(all_points, weight = 1.0)
+        init_object = HgmmHelper(all_points, weight = 1.0)
         min_eig_ratio = 50
         max_third_cov = 0.01
         #stop_condition = lambda l1, l2, l3, num_points: (s[0]/s[2] > min_eig_ratio and
@@ -132,7 +131,7 @@ class Gmm:
 
                         else:
                            #print(" decompose this point cloud!")
-                           new_pc = HgmmObject(points, weight * sub_pc.curr_weight, mean = mean, cov = cov)
+                           new_pc = HgmmHelper(points, weight * sub_pc.curr_weight, mean = mean, cov = cov)
                            next_list.append(new_pc)
 
                         #print("finished iteration")
@@ -223,6 +222,20 @@ class Gmm:
                 tmp_dict = pickle.load(pickle_in)
                 pickle_in.close()
                 self.__dict__.update(tmp_dict)
+
+    def naive_mesh_gmm(self, init_mesh):
+        mesh = pymesh.meshio.form_mesh(np.asarray(init_mesh.vertices),
+                                       np.asarray(init_mesh.triangles))
+
+        means, aeras = get_centroids(mesh)
+
+        face_vert = mesh.vertices[mesh.faces.reshape(-1),:].reshape((mesh.faces.shape[0],3,-1))
+        print("face verts:", face_vert)
+        tri_covars = get_tri_covar(face_vert)
+        print("tri_covars", tri_covars)
+
+        self.means = means
+        self.covariances = tri_covars
 
 
     def sample_from_gmm(self, n_points = 1000):

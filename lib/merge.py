@@ -41,14 +41,12 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
     alpha, beta = np.meshgrid(alpha, beta)
 
     #assuming a front_left_up frame for the camera
-    print(alpha.shape, beta.shape)
     rays = sensor_max_range * np.array([np.cos(alpha/180.0 * np.pi),
                                np.sin(alpha/180.0 * np.pi),
                                np.sin(beta/180.0 * np.pi)])\
                                .reshape((3, alpha.shape[0]*beta.shape[1]))
     rays = rays.T
     ray_centers = np.tile(pos, (rays.shape[0], 1))
-    print(ray_centers[1:10, :])
 
     #transform to global frame!
     r = scipy.spatial.transform.Rotation.from_euler('ZYX', rpy[::-1], degrees=True)
@@ -58,7 +56,9 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
     print("starting ray trace")
     triangle_index = raytracer.intersects_first(ray_centers, rays)
     triangle_index = np.delete(triangle_index, np.where(triangle_index == -1))
-    if triangle_index is
+    if triangle_index.size == 0:
+        print("rays do not intersect! mesh outside sensor range")
+        return mesh
     triangle_index = np.unique(triangle_index)
 
     #create mask from intersected triangles

@@ -11,13 +11,17 @@ from lib import merge
 
 import trimesh
 
+#define data path
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
 bunny_point_cloud_file = data_folder + "/bunny/data/bun045_large.ply"
 cube_file = "test_cube.ply"
+
+#loadable gmms for speed
 tmp_gmm_file = data_folder + "/tmp/tmp_measurement_gmm"
 
+#path of local libs
 directGMM_folder = home + "/semester_project/direct_gmm/mixture"
 hgmm_folder = home + "/semester_project/ \
                       GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
@@ -29,7 +33,7 @@ def main():
     # load measurement and (disrupt measurement)
     measurement_pc = load_measurement(bunny_point_cloud_file)
     #TODO set (or get) cam pos and quat!
-    sensor_position_enu = [0.0, 1.0, 3.0]
+    sensor_position_enu = [0.0, 1.0, 2.0]
     sensor_rpy = [0.0, 90.0, 90.0]
     sensor_quaternion = []
     sensor_fov = [100, 85]
@@ -37,9 +41,8 @@ def main():
     angular_resolution = 0.3
 
 
-    #fit gmm
+    #fit measurement gmm
     measurement_gmm = Gmm()
-
     #measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
     #                              path = tmp_gmm_file)
     #measurement_gmm.pc_hgmm(measurement_pc)
@@ -48,14 +51,16 @@ def main():
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
-    new_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
+    occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
                                    sensor_rpy, sensor_max_range = range,
                                    sensor_fov = sensor_fov,
                                    angular_resolution = angular_resolution)
 
     # fit via direct gmm
-    #prior_gmm = Gmm()
-    #prior_gmm.mesh_gmm(prior_mesh, n = 100, recompute = True)
+    prior_gmm = Gmm()
+    #prior_gmm.mesh_gmm(occluded_mesh, n = 100, recompute = True)
+    prior_gmm.naive_mesh_gmm(occluded_mesh)
+
     prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation
 
     ##### register and merge
@@ -65,6 +70,7 @@ def main():
 
     #transform pc to the right spot
     measurement_registered = registration.transform_measurement(measurement_pc, transform)
+    #measurement_gmm.pc_simple_gmm(measurement_registered, path = tmp_gmm_file, recompute = False)
     measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_file, recompute = False)
 
     # perform refinement
@@ -79,7 +85,7 @@ def main():
     mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
-    #mpl_visualize(prior_gmm, cov_scale = cov_scale)
+    mpl_visualize(prior_gmm, cov_scale = cov_scale)
     #mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
     #              cov_scale = cov_scale)
     #mpl_visualize(measurement_pc)
