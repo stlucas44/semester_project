@@ -71,7 +71,7 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
     mesh.remove_triangles_by_mask(mask)
     mesh.remove_unreferenced_vertices()
 
-    plot = True
+    plot = False
     if plot:
         ax = visualization.visualize_mesh(mesh)
         step = 10
@@ -79,8 +79,8 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
         ax.scatter((ray_centers + rays)[::step,0], (ray_centers + rays)[::step,1],
                    (ray_centers + rays)[::step,2], s = 1, c = 'g')
         plt.show()
-
-    return mesh
+    #TODO (stlucas): keep removed triangles in different mesh
+    return mesh #, removed_mesh
 
 
 def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
@@ -159,16 +159,18 @@ def gmm_merge(mesh_gmm, pc_gmm, min_overlap = 1.0):
 
 
     pre-steps:
-    remove occluded gmms from prior (but keep them somewhere!)
+    remove occluded gmms from prior (but keep them somewhere!) --> view_point_crop
 
     algo:
     1. determine case: overlap, only prior, only measurement
+        * t-test
+        * mean_test near enough
     2. if only prior -> remove from collection
        if only measurement -> keep, add to mixture
        if intersecting
         evaluate if should be kept or not?
     3. add "occluded patterns from prior"
-    4. create mesh from gmm. (with outer rim from prior)
+    4. create mesh from gmm. (with outer rim from prior?)
     --> leads to perfectly integrated mesh
 
     evaluation metric: (aka regularized covariances?)
@@ -209,8 +211,6 @@ def analyze_result(pointcloud, gmm, point_groups):
     plt.subplot(212)
     plt.bar(np.arange(0,len(group_lengths)), group_lengths)
     plt.show()
-
-
 
     # plot weights
     #plot point numbers

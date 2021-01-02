@@ -1,5 +1,6 @@
 import copy
 import numpy as np
+import scipy
 import sklearn.mixture
 import sys
 import pickle
@@ -187,8 +188,8 @@ class Gmm:
 
             #generate means, covs and faces
             com,a = get_centroids(mesh)
-            print("Com ", com.shape, "      a ", a.shape)
-            face_vert = mesh.vertices[mesh.faces.reshape(-1),:].reshape((mesh.faces.shape[0],3,-1))
+            print("Com ", com.shape, "      area (a) ", a.shape)
+            face_vert = get_face_verts(mesh.vertices, mesh.faces)
             print("Face vert: ", face_vert.shape)
 
             data_covar = get_tri_covar(face_vert) # what does it expect?!
@@ -228,23 +229,48 @@ class Gmm:
                                        np.asarray(init_mesh.triangles))
 
         means, aeras = get_centroids(mesh)
-
-        face_vert = mesh.vertices[mesh.faces.reshape(-1),:].reshape((mesh.faces.shape[0],3,-1))
-        print("face verts:", face_vert)
+        face_vert = get_face_verts(mesh.vertices, mesh.faces)
+        #print("face verts:", face_vert)
         tri_covars = get_tri_covar(face_vert)
-        print("tri_covars", tri_covars)
+        #print("tri_covars", tri_covars)
 
         self.means = means
         self.covariances = tri_covars
+
+        #generate precision and chol decomposition
+        print("covar shape:", tri_covars.shape)
+        #print("prec shape:", np.linalg.inv([tri_covars[:]]).shape)
+        self.precs = np.zeros(self.covariances.shape)
+        self.precs_chol = np.zeros(self.covariances.shape)
+        counter = 0
+
+        def is_pos_def(x):
+            return np.all(np.linalg.eigvals(x) > 0)
+
+        for cov in self.covariances:
+            if not is_pos_def(cov):
+                print("negative semidefinite!")
+                continue
+            print("Cov expected to be pos def:", is_pos_def(cov))
+
+            #self.precisions[counter, :, :] = np.linalg.inv(cov)
+            #self.precs_chol[counter, :, :] = np.linalg.inv(scipy.linalg.cholesky(cov))
+
+        self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+        self.gmm_generator.means_ = self.means
+        self.gmm_generator.weights_ = self.weights
+        self.gmm_generator.covariances_ = self.covariances
+        self.gmm_generator.precisions_ = self.precs
+        self.gmm_generator.precisions_cholesky_ = self.precs_chol
 
 
     def sample_from_gmm(self, n_points = 1000):
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
 
-# direct gmm helper methods:
+# direct gmm helper methods: (from leonek)
 def get_centroids(mesh):
     # obtain a vertex for each face index
-    face_vert = mesh.vertices[mesh.faces.reshape(-1),:].reshape((mesh.faces.shape[0],3,-1)) #@ np.array([[1,0,0],[0,0,1],[0,-1,0] ])
+    face_vert = get_face_verts(mesh.vertices, mesh.faces)
     # face_vert is size (faces,3(one for each vert), 3(one for each dimension))
     centroids = face_vert.sum(1)/3.0
     ABAC = face_vert[:,1:3,:] - face_vert[:,0:1,:]
@@ -253,12 +279,19 @@ def get_centroids(mesh):
     #areas = areas.reshape((-1,1))
     return centroids, areas
 
+def get_face_verts(vertices, faces):
+    return vertices[faces.reshape(-1),:].reshape((faces.shape[0],3,-1))
+
 def get_tri_covar(tris):
+    # WARN: this algorithms creates non pos definite covariances!
     covars = []
     for face in tris:
         A = face[0][:,None]
+        #print(" A = ", A)
         B = face[1][:,None]
+        #print(" B = ", B)
         C = face[2][:,None]
+        #print(" C = ", C)
         M = (A+B+C)/3
         covars.append(A @ A.T + B @ B.T + C @ C.T - 3* M @ M.T)
     return np.array(covars)*(1/12.0)

@@ -43,6 +43,7 @@ def main():
 
     #fit measurement gmm
     measurement_gmm = Gmm()
+    #options
     #measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
     #                              path = tmp_gmm_file)
     #measurement_gmm.pc_hgmm(measurement_pc)
@@ -51,6 +52,7 @@ def main():
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
+
     occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
                                    sensor_rpy, sensor_max_range = range,
                                    sensor_fov = sensor_fov,
@@ -58,9 +60,11 @@ def main():
 
     # fit via direct gmm
     prior_gmm = Gmm()
-    #prior_gmm.mesh_gmm(occluded_mesh, n = 100, recompute = True)
-    prior_gmm.naive_mesh_gmm(occluded_mesh)
+    prior_gmm.mesh_gmm(occluded_mesh, n = 100, recompute = True)
+    #prior_gmm.naive_mesh_gmm(occluded_mesh)
+    prior_gmm.naive_mesh_gmm(prior_mesh)
 
+'''
     prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation
 
     ##### register and merge
@@ -93,6 +97,7 @@ def main():
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
+'''
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)

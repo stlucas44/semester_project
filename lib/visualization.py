@@ -173,8 +173,3 @@ def visualize_gmm_weights(gmm):
     #print(gmm.weights)
     plt.bar(np.arange(0,gmm_count), gmm.weights)
     plt.show()
-
-def visualize_colored_samples(gmm):
-    #print(np.size)
-    for i in np.arange(0, len(gmm.samples)):
-        visualize_pc
