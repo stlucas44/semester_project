@@ -224,22 +224,24 @@ class Gmm:
                 pickle_in.close()
                 self.__dict__.update(tmp_dict)
 
-    def naive_mesh_gmm(self, init_mesh):
+    def naive_mesh_gmm(self, init_mesh, mesh_std = 0.1):
         mesh = pymesh.meshio.form_mesh(np.asarray(init_mesh.vertices),
                                        np.asarray(init_mesh.triangles))
 
         means, aeras = get_centroids(mesh)
         face_vert = get_face_verts(mesh.vertices, mesh.faces)
-        #print("face verts:", face_vert)
+
         tri_covars = get_tri_covar(face_vert)
-        #print("tri_covars", tri_covars)
+        #tri_covars = get_tri_covar_steiner(face_vert, means, mesh_std) -> not working yet!
+
+        #guarantee covariances invertibility
+        k = 0.001
+        tri_covars = tri_covars + k * np.identity(3)
 
         self.means = means
         self.covariances = tri_covars
 
         #generate precision and chol decomposition
-        print("covar shape:", tri_covars.shape)
-        #print("prec shape:", np.linalg.inv([tri_covars[:]]).shape)
         self.precs = np.zeros(self.covariances.shape)
         self.precs_chol = np.zeros(self.covariances.shape)
         counter = 0
@@ -249,14 +251,13 @@ class Gmm:
 
         for cov in self.covariances:
             if not is_pos_def(cov):
-                print("negative semidefinite!")
+                print("negative semidefinite covariance matrix!")
                 continue
-            print("Cov expected to be pos def:", is_pos_def(cov))
 
-            #self.precisions[counter, :, :] = np.linalg.inv(cov)
-            #self.precs_chol[counter, :, :] = np.linalg.inv(scipy.linalg.cholesky(cov))
+            self.precs[counter, :, :] = np.linalg.inv(cov)
+            self.precs_chol[counter, :, :] = np.linalg.inv(scipy.linalg.cholesky(cov))
 
-        self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+        self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = len(means), max_iter = 30)
         self.gmm_generator.means_ = self.means
         self.gmm_generator.weights_ = self.weights
         self.gmm_generator.covariances_ = self.covariances
@@ -295,3 +296,38 @@ def get_tri_covar(tris):
         M = (A+B+C)/3
         covars.append(A @ A.T + B @ B.T + C @ C.T - 3* M @ M.T)
     return np.array(covars)*(1/12.0)
+
+def get_tri_covar_steiner(tris, centroids, mesh_std):
+    print(tris.shape)
+    # source: https://en.wikipedia.org/wiki/Steiner_ellipse
+
+    AB = tris[:,1, :] - tris[:, 0, :]
+    AC = tris[:,2, :] - tris[:, 0, :]
+    BC = tris[:,2, :] - tris[:, 1, :]
+
+    # determine SC as the longest avaliable! (actually does not )
+    SC = tris[:,2,:] - centroids
+
+    s_0_unbounded = SC
+    l_0 = np.linalg.norm(s_0_unbounded, axis = 1).reshape((-1, 1))
+    s_0 = s_0_unbounded / l_0
+    #print(l_0.shape, s_0.shape)
+
+    s_1_unbounded = 1/np.sqrt(3.0) * AB
+    l_1 = np.linalg.norm(s_1_unbounded, axis = 1).reshape((-1, 1))
+    s_1 = s_1_unbounded / l_1
+
+    l_2 = np.square(mesh_std)
+    s_2_unbounded = np.cross(AB, AC)
+    s_2 = s_2_unbounded / np.linalg.norm(s_2_unbounded)
+
+    cov = np.zeros(tris.shape)
+    cov_unshaped = np.asarray([(l_0 * s_0), (l_1 * s_1), (l_2 * s_2)])
+    print(cov_unshaped.shape)
+
+    # TODO: make this transform work!
+    range = np.arange(1, len(l_1))
+    for i in range:
+        cov[i] = cov_unshaped[:,i,:].T
+
+    return cov

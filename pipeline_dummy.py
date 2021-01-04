@@ -53,18 +53,18 @@ def main():
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
 
-    occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
-                                   sensor_rpy, sensor_max_range = range,
-                                   sensor_fov = sensor_fov,
-                                   angular_resolution = angular_resolution)
+    #occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
+    #                               sensor_rpy, sensor_max_range = range,
+    #                               sensor_fov = sensor_fov,
+    #                               angular_resolution = angular_resolution)
 
     # fit via direct gmm
     prior_gmm = Gmm()
-    prior_gmm.mesh_gmm(occluded_mesh, n = 100, recompute = True)
+    #prior_gmm.mesh_gmm(occluded_mesh, n = 100, recompute = True)
     #prior_gmm.naive_mesh_gmm(occluded_mesh)
     prior_gmm.naive_mesh_gmm(prior_mesh)
 
-'''
+    '''
     prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation
 
     ##### register and merge
@@ -89,7 +89,9 @@ def main():
     mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
+    '''
     mpl_visualize(prior_gmm, cov_scale = cov_scale)
+    '''
     #mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
     #              cov_scale = cov_scale)
     #mpl_visualize(measurement_pc)
@@ -97,7 +99,7 @@ def main():
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
-'''
+    '''
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)
