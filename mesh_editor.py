@@ -10,6 +10,7 @@ Cases:
 1 Create cube
 2 crush bunny
 3 scale mesh and pc
+4 (TO BE implented): create a measurement with a mesh (glacier or else)
 '''
 
 edit_case = 3

@@ -64,7 +64,6 @@ def main():
     #prior_gmm.naive_mesh_gmm(occluded_mesh)
     prior_gmm.naive_mesh_gmm(prior_mesh)
 
-    '''
     prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation
 
     ##### register and merge
@@ -74,11 +73,12 @@ def main():
 
     #transform pc to the right spot
     measurement_registered = registration.transform_measurement(measurement_pc, transform)
-    #measurement_gmm.pc_simple_gmm(measurement_registered, path = tmp_gmm_file, recompute = False)
-    measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_file, recompute = False)
+    measurement_gmm.pc_simple_gmm(measurement_registered, path = tmp_gmm_file, recompute = False)
+    #measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_file, recompute = False)
 
     # perform refinement
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
+    merged_gmm = merge.gmm_merge(prior_gmm, measurement_gmm)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
@@ -89,9 +89,8 @@ def main():
     mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
-    '''
+
     mpl_visualize(prior_gmm, cov_scale = cov_scale)
-    '''
     #mpl_visualize(merged_pc, measurement_gmm, colors = ['r', 'g'],
     #              cov_scale = cov_scale)
     #mpl_visualize(measurement_pc)
@@ -99,7 +98,6 @@ def main():
 
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
-    '''
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)

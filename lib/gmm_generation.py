@@ -30,6 +30,7 @@ class Gmm:
         self.samples = []
         self.sample_labels = []
         self.gmm_type = 0 # 1 =
+        self.measured = False
 
     def pc_simple_gmm(self, pc, n = 100, recompute = True, path = None):
         # pc of type o3d.geometry.pointcloud
@@ -147,6 +148,7 @@ class Gmm:
             self.covariances = np.asarray(self.covariances)
             self.precs = np.asarray(self.precs)
             self.precs_chol = np.asarray(self.precs_chol)
+            self.measured = np.ones((self.num_gaussians,), dtype=bool)
 
             self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
             self.gmm_generator.means_ = self.means
@@ -178,7 +180,7 @@ class Gmm:
             init_params = 'kmeans'
             tol = 1e-2
             max_iter = 100
-
+            self.num_gaussians = n
             self.gmm_generator = GaussianMixture(n_components = n,
                                                  init_params=init_params,
                                                  max_iter=max_iter,tol=tol)
@@ -240,6 +242,8 @@ class Gmm:
 
         self.means = means
         self.covariances = tri_covars
+        self.num_gaussians = len(means)
+        self.measured = np.zeros((self.num_gaussians,), dtype=bool)
 
         #generate precision and chol decomposition
         self.precs = np.zeros(self.covariances.shape)

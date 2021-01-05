@@ -150,7 +150,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
     return return_pc
 
 
-def gmm_merge(mesh_gmm, pc_gmm, min_overlap = 1.0):
+def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -162,7 +162,7 @@ def gmm_merge(mesh_gmm, pc_gmm, min_overlap = 1.0):
     remove occluded gmms from prior (but keep them somewhere!) --> view_point_crop
 
     algo:
-    1. determine case: overlap, only prior, only measurement
+    1. determine case: overlap, only prior, only measurement [0,1,2]
         * t-test
         * mean_test near enough
     2. if only prior -> remove from collection
@@ -184,9 +184,52 @@ def gmm_merge(mesh_gmm, pc_gmm, min_overlap = 1.0):
     cov_measure = mean_cov, max_cov, weighted mean_cov (weight large ones heavier?)?
 
     '''
+    # input: (occluded) mesh_means, mesh_covs
+    #        pc_means, pc_covs
+    prior_range = np.arange(0, prior_gmm.num_gaussians)
+    measurement_range = np.arange(0, measurement_gmm.num_gaussians)
+    keep = np.zeros(len(prior_range,), dtype=bool)
+    for i in prior_range:
+        mean = prior_gmm.means[i]
+        cov = prior_gmm.covariances[i]
 
+        #mask = get_intersection_type_simple(measurement_gmm.means, mean = mean, cov = cov, min_likelihood = 0.1)
+        t = np.zeros((measurement_gmm.num_gaussians,))
+        for j in measurement_range:
+
+            t[j] = get_intersection_type(mean, cov,
+                                        measurement_gmm.means[j],
+                                        measurement_gmm.covariances[j])
+        plot = True
+        if plot:
+            plt.plot(measurement_range, t)
+            plt.show()
+        #print(min(t))
+
+        #print("mask created")
 
     pass
+
+def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
+    appearence_likelihood = multivariate_normal.pdf(points, mean = mean, cov = cov)
+
+    return appearence_likelihood > min_likelihood
+
+def get_intersection_type(meanA, covA, meanB, covB):
+    #source: https://en.wikipedia.org/wiki/Hotelling%27s_T-squared_distribution#Two-sample_statistic
+    meanA = meanA.reshape((-1,1))
+    meanB = meanB.reshape((-1,1))
+
+    sample_size = 10.0
+    n_x = 1.0 * sample_size
+    n_y = 1.0 * sample_size
+
+    S = ((n_x - 1.0) * covA + (n_y - 1.0) * covB) / (n_x + n_y - 2.0)
+
+    t_squared = (n_x * n_y) * (n_x + n_y) * np.linalg.multi_dot([(meanA - meanB).T,np.linalg.inv(S),(meanA - meanB)])
+    #print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
+
+    return np.sqrt(t_squared)
 
 def stitch_pc():
     # implement something nice!
