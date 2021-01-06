@@ -157,7 +157,6 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
     * Localization is proper!
     * Rough alignment alignment is guaranteed
 
-
     pre-steps:
     remove occluded gmms from prior (but keep them somewhere!) --> view_point_crop
 
@@ -188,6 +187,7 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
     #        pc_means, pc_covs
     prior_range = np.arange(0, prior_gmm.num_gaussians)
     measurement_range = np.arange(0, measurement_gmm.num_gaussians)
+    print("prior range:", prior_range, "measurement_range", measurement_range)
     keep = np.zeros(len(prior_range,), dtype=bool)
     for i in prior_range:
         mean = prior_gmm.means[i]
@@ -196,7 +196,6 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
         #mask = get_intersection_type_simple(measurement_gmm.means, mean = mean, cov = cov, min_likelihood = 0.1)
         t = np.zeros((measurement_gmm.num_gaussians,))
         for j in measurement_range:
-
             t[j] = get_intersection_type(mean, cov,
                                         measurement_gmm.means[j],
                                         measurement_gmm.covariances[j])
@@ -204,7 +203,8 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
         if plot:
             plt.plot(measurement_range, t)
             plt.show()
-        #print(min(t))
+        print(t)
+
 
         #print("mask created")
 
@@ -217,17 +217,25 @@ def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
 
 def get_intersection_type(meanA, covA, meanB, covB):
     #source: https://en.wikipedia.org/wiki/Hotelling%27s_T-squared_distribution#Two-sample_statistic
+    if isinstance(meanA, float):
+        meanA = np.array([meanA]).reshape((1,1))
+    if isinstance(meanB, float):
+        meanB = np.array([meanB]).reshape((1,1))
+
+
     meanA = meanA.reshape((-1,1))
     meanB = meanB.reshape((-1,1))
 
-    sample_size = 10.0
+    sample_size = 100.0
     n_x = 1.0 * sample_size
     n_y = 1.0 * sample_size
 
     S = ((n_x - 1.0) * covA + (n_y - 1.0) * covB) / (n_x + n_y - 2.0)
+    if S.shape == (1,):
+        S = S.reshape((1,1))
 
     t_squared = (n_x * n_y) * (n_x + n_y) * np.linalg.multi_dot([(meanA - meanB).T,np.linalg.inv(S),(meanA - meanB)])
-    #print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
+    print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
 
     return np.sqrt(t_squared)
 

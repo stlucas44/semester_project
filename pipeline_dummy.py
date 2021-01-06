@@ -99,6 +99,8 @@ def main():
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
 
+
+# TODO(stlucas): to be moved to its own class?!
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)
 

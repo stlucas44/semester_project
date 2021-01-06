@@ -29,7 +29,6 @@ class Gmm:
         self.gmm_generator = []
         self.samples = []
         self.sample_labels = []
-        self.gmm_type = 0 # 1 =
         self.measured = False
 
     def pc_simple_gmm(self, pc, n = 100, recompute = True, path = None):
