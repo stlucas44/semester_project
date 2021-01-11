@@ -27,6 +27,7 @@ hgmm_folder = home + "/semester_project/ \
                       GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
 
 cov_scale = 2.0 #95% quantile!
+view_point_angle =  (80.0, -60.0)
 
 def main():
     ##### process measurement
@@ -46,23 +47,23 @@ def main():
     #options
     #measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
     #                              path = tmp_gmm_file)
-    #measurement_gmm.pc_hgmm(measurement_pc)
+    measurement_gmm.pc_hgmm(measurement_pc)
     #measurement_gmm.sample_from_gmm()
 
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
 
-    #occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
-    #                               sensor_rpy, sensor_max_range = range,
-    #                               sensor_fov = sensor_fov,
-    #                               angular_resolution = angular_resolution)
+    occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
+                                   sensor_rpy, sensor_max_range = range,
+                                   sensor_fov = sensor_fov,
+                                   angular_resolution = angular_resolution)
 
     # fit via direct gmm
     prior_gmm = Gmm()
-    #prior_gmm.mesh_gmm(occluded_mesh, n = 100, recompute = True)
+    prior_gmm.mesh_gmm(occluded_mesh, n = 200, recompute = True)
     #prior_gmm.naive_mesh_gmm(occluded_mesh)
-    prior_gmm.naive_mesh_gmm(prior_mesh)
+    #prior_gmm.naive_mesh_gmm(prior_mesh)
 
     prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation
 
@@ -78,13 +79,16 @@ def main():
 
     # perform refinement
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
-    merged_gmm = merge.gmm_merge(prior_gmm, measurement_gmm)
+    #merged_gmm = merge.gmm_merge(prior_gmm, measurement_gmm)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
     #error_mesh = eval_quality(ref_mesh, prior_mesh)
 
     ##### visualize
+    #presentation_plots:
+    presentation_plots(measurement_registered, prior_mesh, measurement_gmm, prior_gmm)
+
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
     mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
@@ -101,6 +105,15 @@ def main():
 
 
 # TODO(stlucas): to be moved to its own class?!
+def presentation_plots(measurement_pc, prior_mesh, measurement_gmm, prior_gmm):
+    mpl_visualize(measurement_pc, view_angle = view_point_angle, path="imgs/measurement_pc.png", show_z = False)
+    mpl_visualize(prior_mesh, alpha = 1, view_angle = view_point_angle, path="imgs/prior_mesh.png", show_z = False)
+    mpl_visualize(measurement_gmm, cov_scale = 2.0, show_mean = False, view_angle = view_point_angle,
+                  path="imgs/measurement_gmm.png", show_z = False)
+    mpl_visualize(prior_gmm, cov_scale = 2.0, show_mean = False, view_angle = view_point_angle,
+                  path="imgs/prior_gmm.png", show_z = False)
+
+
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(n_points)
 

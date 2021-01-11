@@ -8,9 +8,14 @@ from lib.gmm_generation import Gmm
 
 def o3d_visualize(*obj):
     #option: mesh_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
+    obj = [element.compute_vertex_normals() for element in obj]
     o3d.visualization.draw_geometries(obj)
 
-def mpl_visualize(*obj, cov_scale = 1.0, colors = None):
+def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
+                  view_angle = None,
+                  show_mean = True,
+                  path = None,
+                  show_z = True):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -26,7 +31,7 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None):
             else:
                 color = colors[iterator]
             #print("mesh detected")
-            visualize_mesh(element, ax, c = color)
+            visualize_mesh(element, ax, c = color, alpha = alpha)
 
         elif type(element) == type( o3d.geometry.PointCloud()):
             if colors[iterator] is None:
@@ -38,7 +43,7 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None):
 
         elif type(element) == type(Gmm()):
             #print("gmm detected")
-            visualize_gmm(element, ax, cov_scale = cov_scale)
+            visualize_gmm(element, ax, cov_scale = cov_scale, show_mean = show_mean)
 
         else:
             print("unkown type detected: " + type(element))
@@ -46,7 +51,16 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None):
 
     ax.set_xlabel('X axis')
     ax.set_ylabel('Y axis')
-    ax.set_zlabel('Z axis')
+    if show_z:
+        ax.set_zlabel('Z axis')
+    else:
+        ax.set_zticklabels([])
+
+    if view_angle is not None:
+        ax.view_init(*view_angle)
+
+    if path is not None:
+        plt.savefig(path)
     plt.show()
 
 def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
@@ -73,10 +87,9 @@ def visualize_pc(pc, ax = None, sensor_origin = None,
     points = np.asarray(pc.points)
 
     max_point_nr = 1000
-    step = max((len(points)//max_point_nr), 1)
-
-    ax.scatter(points[1:-1:step,0], points[1:-1:step,1],
-               points[1:-1:step,2], c = c, s =0.5,
+    samples = np.random.randint(0, len(points), (max_point_nr,))
+    ax.scatter(points[samples,0], points[samples,1],
+               points[samples,2], c = c, s =0.5,
                alpha = 0.7, label= "point cloud")
     if sensor_origin is not None:
         ax.scatter(sensor_origin[0], sensor_origin[1], sensor_origin[2], c = "b", s = 2.0,
