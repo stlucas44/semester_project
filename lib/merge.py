@@ -195,8 +195,10 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
 
         #mask = get_intersection_type_simple(measurement_gmm.means, mean = mean, cov = cov, min_likelihood = 0.1)
         t = np.zeros((measurement_gmm.num_gaussians,))
+        result = np.zeros((measurement_gmm.num_gaussians,),dtype=bool)
+
         for j in measurement_range:
-            t[j] = get_intersection_type(mean, cov,
+            result[j], t[j] = get_intersection_type(mean, cov,
                                         measurement_gmm.means[j],
                                         measurement_gmm.covariances[j])
         plot = True
@@ -204,7 +206,7 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
             plt.plot(measurement_range, t)
             plt.show()
         print(t)
-
+        return result, t
 
         #print("mask created")
 
@@ -227,17 +229,46 @@ def get_intersection_type(meanA, covA, meanB, covB):
     meanB = meanB.reshape((-1,1))
 
     sample_size = 100.0
-    n_x = 1.0 * sample_size
-    n_y = 1.0 * sample_size
+    nA = 1.0 * sample_size
+    nB = 1.0 * sample_size
 
-    S = ((n_x - 1.0) * covA + (n_y - 1.0) * covB) / (n_x + n_y - 2.0)
+    #t_squared = get_t_squared(meanA, covA, nA, meanB, covB, nB)
+    t_squared = get_t_squared2(meanA, covA, nA, meanB, covB, nB)
+    v = get_v(covA, nA, covB, nB)
+    #print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
+
+    return t_squared >= v, np.sqrt(t_squared)
+
+def get_t_squared(meanA, covA, nA, meanB, covB, nB):
+    S = ((nA - 1.0) * covA + (nB - 1.0) * covB) / (nA + nB - 2.0)
     if S.shape == (1,):
         S = S.reshape((1,1))
 
-    t_squared = (n_x * n_y) * (n_x + n_y) * np.linalg.multi_dot([(meanA - meanB).T,np.linalg.inv(S),(meanA - meanB)])
-    print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
+    t_squared = (nA * nB) * (nA + nB) * np.linalg.multi_dot([(meanA - meanB).T,np.linalg.inv(S),(meanA - meanB)])
+    return t_squared
 
-    return np.sqrt(t_squared)
+def get_t_squared2(y_1, S_1, n_1, y_2, S_2, n_2):
+    if isinstance(S_1, float):
+        S_1 = np.reshape(S_1, (1,1))
+        S_2 = np.reshape(S_2, (1,1))
+
+    return (y_1 - y_2).T.dot(np.linalg.inv(S_1/n_1 + S_2/n_2)).dot(y_1 - y_2)
+
+
+def get_v(S_1, n_1, S_2, n_2):
+    Sn1 = S_1/n_1
+    Sn2 = S_2/n_2
+
+    if isinstance(S_1, float):
+        Sn1 = np.reshape(Sn1, (1,1))
+        Sn2 = np.reshape(Sn2, (1,1))
+
+    A = ((Sn1+Sn2).dot(Sn1+Sn2)).trace()
+    B =  (Sn1+Sn2).trace()**2
+    C = ((Sn1.dot(Sn1)).trace() + Sn1.trace() **2)/(n_1-1)
+    D = ((Sn2.dot(Sn2)).trace() + Sn2.trace() **2)/(n_2-1)
+
+    return (A+B)/(C+D)
 
 def stitch_pc():
     # implement something nice!
