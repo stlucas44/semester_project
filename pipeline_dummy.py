@@ -25,10 +25,15 @@ tmp_gmm_file = data_folder + "/tmp/tmp_measurement_gmm"
 directGMM_folder = home + "/semester_project/direct_gmm/mixture"
 hgmm_folder = home + "/semester_project/ \
                       GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
-
+# visualization
 cov_scale = 2.0 #95% quantile!
 view_point_angle =  (80.0, -60.0)
 
+# tuning parameters:
+num_gaussians_prior = 100
+num_gaussians_measurement = 100
+n_prior = 1.0# weights
+n_measurement = 1.0
 def main():
     ##### process measurement
     # load measurement and (disrupt measurement)
@@ -79,7 +84,7 @@ def main():
 
     # perform refinement
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
-    #merged_gmm = merge.gmm_merge(prior_gmm, measurement_gmm)
+    merged_gmm = merge.gmm_merge(prior_gmm, measurement_gmm)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
@@ -87,7 +92,7 @@ def main():
 
     ##### visualize
     #presentation_plots:
-    presentation_plots(measurement_registered, prior_mesh, measurement_gmm, prior_gmm)
+    #presentation_plots(measurement_registered, prior_mesh, measurement_gmm, prior_gmm)
 
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
     mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration

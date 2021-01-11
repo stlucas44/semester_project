@@ -66,10 +66,15 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
     mask = [element not in triangle_index for element in triangle_range]
     print("number of hit triangles: ", len(triangle_index))
 
-
+    anti_mask = mask
     #remove the nonvisible parts of the mesh
+    occluded_mesh = copy.deepcopy(mesh)
+
     mesh.remove_triangles_by_mask(mask)
     mesh.remove_unreferenced_vertices()
+
+    occluded_mesh.remove_triangles_by_mask(anti_mask)
+    occluded_mesh.remove_unreferenced_vertices()
 
     plot = False
     if plot:
@@ -150,7 +155,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
     return return_pc
 
 
-def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
+def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, sample_ratio = 1):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -187,8 +192,11 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
     #        pc_means, pc_covs
     prior_range = np.arange(0, prior_gmm.num_gaussians)
     measurement_range = np.arange(0, measurement_gmm.num_gaussians)
-    print("prior range:", prior_range, "measurement_range", measurement_range)
-    keep = np.zeros(len(prior_range,), dtype=bool)
+    #print("prior range:", prior_range, "measurement_range", measurement_range)
+
+    #create match matrix to check for the cases
+    match = np.zeros((len(prior_range),len(measurement_range)), dtype=bool)
+
     for i in prior_range:
         mean = prior_gmm.means[i]
         cov = prior_gmm.covariances[i]
@@ -198,18 +206,31 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0):
         result = np.zeros((measurement_gmm.num_gaussians,),dtype=bool)
 
         for j in measurement_range:
-            result[j], t[j] = get_intersection_type(mean, cov,
+            local_result, t[j] = get_intersection_type(mean, cov,
                                         measurement_gmm.means[j],
-                                        measurement_gmm.covariances[j])
-        plot = True
+                                        measurement_gmm.covariances[j],
+                                        sample_size = sample_size,
+                                        sample_ratio = sample_ratio)
+            result[j] = local_result
+            match[i,j] = not result[j]
+        plot = False
         if plot:
             plt.plot(measurement_range, t)
             plt.show()
-        print(t)
+        #print(t)
         return result, t
 
         #print("mask created")
 
+    mesh_sums = np.sum(match, axis = 0)
+    measurement_sums = np.sum(match, axis = 1)
+
+    plot_sums = True
+    if plot_sums:
+        plt.plot(mesh_sums, label = "mesh sums")
+        plt.plot(measurement_sums, label = "measurement sums")
+        plt.legend()
+        plt.show()
     pass
 
 def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
@@ -217,7 +238,7 @@ def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
 
     return appearence_likelihood > min_likelihood
 
-def get_intersection_type(meanA, covA, meanB, covB):
+def get_intersection_type(meanA, covA, meanB, covB, sample_size = 100.0, sample_ratio = 1.0):
     #source: https://en.wikipedia.org/wiki/Hotelling%27s_T-squared_distribution#Two-sample_statistic
     if isinstance(meanA, float):
         meanA = np.array([meanA]).reshape((1,1))
@@ -228,9 +249,11 @@ def get_intersection_type(meanA, covA, meanB, covB):
     meanA = meanA.reshape((-1,1))
     meanB = meanB.reshape((-1,1))
 
-    sample_size = 100.0
-    nA = 1.0 * sample_size
-    nB = 1.0 * sample_size
+    # TODO(stlucas): should we adapt sample sizes according what
+
+    # mixture weights, covariance size...
+    nA = sample_size
+    nB =sample_ratio * sample_size
 
     #t_squared = get_t_squared(meanA, covA, nA, meanB, covB, nB)
     t_squared = get_t_squared2(meanA, covA, nA, meanB, covB, nB)
@@ -293,9 +316,5 @@ def analyze_result(pointcloud, gmm, point_groups):
     plt.subplot(212)
     plt.bar(np.arange(0,len(group_lengths)), group_lengths)
     plt.show()
-
-    # plot weights
-    #plot point numbers
-    #plot point numbers filtered?
 
     pass
