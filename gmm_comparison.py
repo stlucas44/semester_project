@@ -17,7 +17,7 @@ def main():
     #run2()
 
     # try different sample_sizes
-    #run3()
+    run3()
     # try different ratios
     run4()
 
@@ -65,11 +65,11 @@ def run3(): # vary sample sizes (keeping covs as in run 2)
         measurement = Gmm(means = m_means, covariances = m_covs)
         measurement.num_gaussians = len(m_means)
 
-        sample_sizes = np.logspace(2,5, num = 10)
+        sample_sizes = 2 * np.logspace(0,3, num = 10)
         for sample in sample_sizes:
             print("sample_size = ", sample)
             result, t = merge.gmm_merge(prior, measurement, sample_size = sample)
-            vis_update(prior, measurement, result)
+            #vis_update(prior, measurement, result)
 
             plt.plot(measurement.means, result, label = "sample_size = " + str(sample))
 
@@ -87,7 +87,7 @@ def run4(): # vary sample sizes (keeping covs as in run 2)
 
         sample_sizes = np.linspace(1.0,10.0, num = 10)
         for sample in sample_sizes:
-            print("sample_size = ", sample)
+            print("sample_size = ", 1/sample)
             result, t = merge.gmm_merge(prior, measurement, sample_size = 1000, sample_ratio = 1/sample)
             plt.plot(measurement.means, result, label = "sample_size = " + str(1/sample))
             print(result)

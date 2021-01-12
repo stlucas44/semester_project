@@ -43,7 +43,8 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
 
         elif type(element) == type(Gmm()):
             #print("gmm detected")
-            visualize_gmm(element, ax, cov_scale = cov_scale, show_mean = show_mean)
+            visualize_gmm(element, ax, cov_scale = cov_scale,
+                          show_mean = show_mean, color = colors[iterator])
 
         else:
             print("unkown type detected: " + type(element))
@@ -100,7 +101,7 @@ def visualize_pc(pc, ax = None, sensor_origin = None,
 
     return ax
 
-def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = False):
+def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = False, color = None):
     if ax is None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -173,8 +174,11 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
                     x[i,j],y[i,j],z[i,j] = np.dot([x[i,j],y[i,j],z[i,j]], vt) \
                                            + local_mean
             # Plot:
-            res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0)
-
+            if color is not None:
+                res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0,
+                                      color = color)
+            else:
+                res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0)
         if show:
             plt.show()
 

@@ -5,6 +5,7 @@ import scipy
 from scipy.stats import multivariate_normal
 
 import matplotlib.pyplot as plt
+from matplotlib import colors as mplcolors
 from lib import gmm_generation, visualization
 import open3d as o3d
 import trimesh
@@ -66,7 +67,7 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
     mask = [element not in triangle_index for element in triangle_range]
     print("number of hit triangles: ", len(triangle_index))
 
-    anti_mask = mask
+    anti_mask = [not element for element in mask]
     #remove the nonvisible parts of the mesh
     occluded_mesh = copy.deepcopy(mesh)
 
@@ -85,7 +86,7 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
                    (ray_centers + rays)[::step,2], s = 1, c = 'g')
         plt.show()
     #TODO (stlucas): keep removed triangles in different mesh
-    return mesh #, removed_mesh
+    return mesh, occluded_mesh
 
 
 def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
@@ -206,39 +207,73 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
         result = np.zeros((measurement_gmm.num_gaussians,),dtype=bool)
 
         for j in measurement_range:
-            local_result, t[j] = get_intersection_type(mean, cov,
-                                        measurement_gmm.means[j],
-                                        measurement_gmm.covariances[j],
-                                        sample_size = sample_size,
-                                        sample_ratio = sample_ratio)
+            local_result, t[j] = get_intersection_type_hotelling(mean, cov,
+                                    measurement_gmm.means[j],
+                                    measurement_gmm.covariances[j],
+                                    sample_size = sample_size,
+                                    sample_ratio = sample_ratio)
             result[j] = local_result
-            match[i,j] = not result[j]
+            match[i,j] = not local_result
         plot = False
         if plot:
             plt.plot(measurement_range, t)
             plt.show()
         #print(t)
-        return result, t
+        #return result, t
 
         #print("mask created")
 
-    mesh_sums = np.sum(match, axis = 0)
-    measurement_sums = np.sum(match, axis = 1)
+    vert_sums = np.sum(match, axis = 0)
+    hor_sums = np.sum(match, axis = 1)
 
     plot_sums = True
     if plot_sums:
-        plt.plot(mesh_sums, label = "mesh sums")
-        plt.plot(measurement_sums, label = "measurement sums")
+        plt.plot(vert_sums, label = "mesh sums")
+        plt.plot(hor_sums, label = "measurement sums")
         plt.legend()
         plt.show()
-    pass
+
+        # create discrete colormap
+        cmap = mplcolors.ListedColormap(['red', 'green'])
+        bounds = [0,0.5,1.0]
+        norm = mplcolors.BoundaryNorm(bounds, cmap.N)
+
+        fig, ax = plt.subplots()
+        ax.imshow(match, cmap=cmap, norm=norm)
+        ax.set_xlabel('measurement gmms (item numbers)')
+        ax.set_ylabel('mesh gmms (item numbers)')
+        plt.show()
+
+    #TODO(stlucas): create new gmms with these mappings from match
+    merged_mixtures = list()
+    matched_mixtures = list()
+    iterator = 0
+    for mask in hor_sums:
+        if mask == 0:
+            iterator = iterator + 1
+            continue
+        measurement_mask = np.zeros(vert_sums.shape, dtype = bool)
+        measurement_mask[iterator] == True
+        prior_mask = np.asarray([match[:,iterator] > 0]).reshape(-1,)
+        merged_gmm = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
+                                               prior_gmm, prior_mask)
+        merged_mixtures.append(merged_gmm)
+        matched_mixtures.append((gmm_generation.extract_gmm(measurement_gmm, measurement_mask),
+                                gmm_generation.extract_gmm(prior_gmm, prior_mask)))
+
+        iterator = iterator + 1
+
+
+    # TODO(stlucas): introduce mask of which mixtures are already taken
+
+    return matched_mixtures
 
 def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
     appearence_likelihood = multivariate_normal.pdf(points, mean = mean, cov = cov)
 
     return appearence_likelihood > min_likelihood
 
-def get_intersection_type(meanA, covA, meanB, covB, sample_size = 100.0, sample_ratio = 1.0):
+def get_intersection_type_hotelling(meanA, covA, meanB, covB, sample_size = 100.0, sample_ratio = 1.0):
     #source: https://en.wikipedia.org/wiki/Hotelling%27s_T-squared_distribution#Two-sample_statistic
     if isinstance(meanA, float):
         meanA = np.array([meanA]).reshape((1,1))

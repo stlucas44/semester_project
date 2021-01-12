@@ -216,7 +216,6 @@ class Gmm:
                 pickle_out = open(path,"wb")
                 pickle.dump(self.__dict__, pickle_out)
                 pickle_out.close()
-            print()
 
         else:
             if path is not None:
@@ -270,6 +269,61 @@ class Gmm:
 
     def sample_from_gmm(self, n_points = 1000):
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
+
+def extract_gmm(gmmA, maskA):
+    merged_gmm = Gmm()
+
+    merged_gmm.num_gaussians = len(gmmA.means[maskA])
+    merged_gmm.means = np.asarray(gmmA.means[maskA])
+    merged_gmm.weights = np.asarray(gmmA.means[maskA])
+    merged_gmm.covariances = np.asarray(gmmA.means[maskA])
+
+    '''
+    self.precs = np.asarray(self.precs)
+    self.precs_chol = np.asarray(self.precs_chol)
+    self.measured = np.ones((self.num_gaussians,), dtype=bool)
+
+
+    merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+    merged_gmm.gmm_generator.means_ = gmmA.means
+    merged_gmm.gmm_generator.weights_ = gmmA.weights
+    merged_gmm.gmm_generator.covariances_ = gmmA.covariances
+    merged_gmm.gmm_generator.precisions_ = gmmA.precs
+    merged_gmm.gmm_generator.precisions_cholesky_ = gmmA.precs_chol
+    '''
+
+    #TODO remove_dublicastes
+
+    return merged_gmm
+
+
+def merge_gmms(gmmA, maskA, gmmB, maskB):
+    merged_gmm = Gmm()
+
+    merged_gmm.num_gaussians = len(gmmA.means[maskA]) + len(gmmB.means[maskB])
+    merged_gmm.means = np.concatenate([gmmA.means[maskA], gmmB.means[maskB]], axis = 0)
+    print("means shape: ", merged_gmm.means)
+    merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0)
+    merged_gmm.covariances = np.concatenate([gmmA.covariances[maskA], gmmB.covariances[maskB]], axis = 0)
+    '''
+    merged_gmm.precs = np.concatenate([gmmA.precs[maskA], gmmB.precs[maskB]], axis = 0)
+    merged_gmm.precs_chol = np.concatenate([gmmA.precs_chol[maskA], gmmB.precs_chol[maskB]], axis = 0)
+    merged_gmm.measured = np.concatenate([gmmA.measured[maskA], gmmB.measured[maskB]], axis = 0)
+
+
+    merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+    merged_gmm.gmm_generator.means_ = gmmA.means
+    merged_gmm.gmm_generator.weights_ = gmmA.weights
+    merged_gmm.gmm_generator.covariances_ = gmmA.covariances
+    merged_gmm.gmm_generator.precisions_ = gmmA.precs
+    merged_gmm.gmm_generator.precisions_cholesky_ = gmmA.precs_chol
+    '''
+
+    #TODO remove_dublicastes
+
+    return merged_gmm
+
+
 
 # direct gmm helper methods: (from leonek)
 def get_centroids(mesh):

@@ -10,7 +10,7 @@ def o3d_point_to_point_icp(source, target,threshold = 1.0,
         source, target, threshold, trans_init,
         o3d.pipelines.registration.TransformationEstimationPointToPoint())
     print(reg_p2p)
-    print("Transformation is:")
+    print("Transformation found:")
     print(reg_p2p.transformation)
     print("")
     return reg_p2p.transformation
