@@ -228,11 +228,12 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
 
     plot_sums = True
     if plot_sums:
+        '''
         plt.plot(vert_sums, label = "mesh sums")
         plt.plot(hor_sums, label = "measurement sums")
         plt.legend()
         plt.show()
-
+        '''
         # create discrete colormap
         cmap = mplcolors.ListedColormap(['red', 'green'])
         bounds = [0,0.5,1.0]
@@ -252,9 +253,9 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
         if mask == 0:
             iterator = iterator + 1
             continue
-        measurement_mask = np.zeros(vert_sums.shape, dtype = bool)
-        measurement_mask[iterator] == True
-        prior_mask = np.asarray([match[:,iterator] > 0]).reshape(-1,)
+        prior_mask = np.zeros(hor_sums.shape, dtype = bool)
+        prior_mask[iterator] = True
+        measurement_mask = np.asarray([match[iterator,:] > 0]).reshape(-1,)
         merged_gmm = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
                                                prior_gmm, prior_mask)
         merged_mixtures.append(merged_gmm)

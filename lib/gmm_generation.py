@@ -275,8 +275,8 @@ def extract_gmm(gmmA, maskA):
 
     merged_gmm.num_gaussians = len(gmmA.means[maskA])
     merged_gmm.means = np.asarray(gmmA.means[maskA])
-    merged_gmm.weights = np.asarray(gmmA.means[maskA])
-    merged_gmm.covariances = np.asarray(gmmA.means[maskA])
+    merged_gmm.weights = np.asarray(gmmA.weights[maskA])
+    merged_gmm.covariances = np.asarray(gmmA.covariances[maskA])
 
     '''
     self.precs = np.asarray(self.precs)
@@ -302,7 +302,6 @@ def merge_gmms(gmmA, maskA, gmmB, maskB):
 
     merged_gmm.num_gaussians = len(gmmA.means[maskA]) + len(gmmB.means[maskB])
     merged_gmm.means = np.concatenate([gmmA.means[maskA], gmmB.means[maskB]], axis = 0)
-    print("means shape: ", merged_gmm.means)
     merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0)
     merged_gmm.covariances = np.concatenate([gmmA.covariances[maskA], gmmB.covariances[maskB]], axis = 0)
     '''

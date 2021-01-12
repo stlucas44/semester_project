@@ -85,7 +85,7 @@ def main():
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
     merged_gmm_lists = merge.gmm_merge(prior_gmm, measurement_gmm)
     for gmm_pair in merged_gmm_lists:
-        mpl_visualize(*gmm_pair, colors = ['r', 'b', 'b', 'b'])
+        mpl_visualize(*gmm_pair, colors = ['r', 'b'], cov_scale = 2.0)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
