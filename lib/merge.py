@@ -197,6 +197,7 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
 
     #create match matrix to check for the cases
     match = np.zeros((len(prior_range),len(measurement_range)), dtype=bool)
+    score = np.zeros((len(prior_range),len(measurement_range)))
 
     for i in prior_range:
         mean = prior_gmm.means[i]
@@ -214,6 +215,7 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
                                     sample_ratio = sample_ratio)
             result[j] = local_result
             match[i,j] = not local_result
+            score[i,j] = t[j]
         plot = False
         if plot:
             plt.plot(measurement_range, t)
@@ -249,25 +251,45 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
     merged_mixtures = list()
     matched_mixtures = list()
     iterator = 0
-    for mask in hor_sums:
-        if mask == 0:
+
+    # find all prior gmms that overlap with measurements
+    prior_mask = np.ones(hor_sums.shape, dtype=bool)
+    measurement_mask = np.ones(vert_sums.shape, dtype=bool)
+
+    for score in hor_sums:
+        if score == 0:
+            prior_mask[iterator] = False
             iterator = iterator + 1
             continue
-        prior_mask = np.zeros(hor_sums.shape, dtype = bool)
-        prior_mask[iterator] = True
-        measurement_mask = np.asarray([match[iterator,:] > 0]).reshape(-1,)
-        merged_gmm = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
-                                               prior_gmm, prior_mask)
+        local_prior_mask = np.zeros(hor_sums.shape, dtype = bool)
+        local_prior_mask[iterator] = True
+        local_measurement_mask = np.asarray([match[iterator,:] > 0]).reshape(-1,)
+        merged_gmm = gmm_generation.merge_gmms(measurement_gmm, local_measurement_mask,
+                                               prior_gmm, local_prior_mask)
         merged_mixtures.append(merged_gmm)
-        matched_mixtures.append((gmm_generation.extract_gmm(measurement_gmm, measurement_mask),
-                                gmm_generation.extract_gmm(prior_gmm, prior_mask)))
-
+        mixture_tuple = (gmm_generation.extract_gmm(measurement_gmm, local_measurement_mask),
+                                gmm_generation.extract_gmm(prior_gmm, local_prior_mask))
+        matched_mixtures.append(mixture_tuple)
         iterator = iterator + 1
 
+        #fill final merge mask:
+        result = decide_on_mixtures(*mixture_tuple, rule='mesh_first') # returs 0 for first
+        measurement_mask[local_measurement_mask] = not result # for now we set the current matches to zero
+        prior_mask[local_prior_mask] = result
+
+    final_mixture = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
+                                           prior_gmm, prior_mask)
+
+    final_mixture_tuple = (gmm_generation.extract_gmm(measurement_gmm, measurement_mask),
+                           gmm_generation.extract_gmm(prior_gmm, prior_mask))
+
+    # find all measurement_gmms that overlap with prior_gmms
+    #what do we do with multioverlap
+    #remove undetected mesh representations
 
     # TODO(stlucas): introduce mask of which mixtures are already taken
 
-    return matched_mixtures
+    return matched_mixtures, final_mixture, final_mixture_tuple
 
 def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
     appearence_likelihood = multivariate_normal.pdf(points, mean = mean, cov = cov)
@@ -328,6 +350,27 @@ def get_v(S_1, n_1, S_2, n_2):
     D = ((Sn2.dot(Sn2)).trace() + Sn2.trace() **2)/(n_2-1)
 
     return (A+B)/(C+D)
+
+def decide_on_mixtures(gmm0, gmm1, rule = "cov"):
+    if rule == "cov":
+        #for now, go only for
+        alpha = 0
+        beta = 1
+        if cost(gmm1, alpha, beta) > cost(gmm0, alpha, beta):
+            return 0
+        else:
+            return 1
+
+    elif rule =="mesh_first":
+        return 1
+
+def cost(gmm, alpha, beta):
+    cov_measure = [min(np.linalg.eigvals(gmm.covariances[:]))]
+    print("Cov measure = ", cov_measure)
+    cost = alpha * len(gmm.means) + beta * np.max(cov_measure)
+    print("cost: ", cost)
+
+    return cost
 
 def stitch_pc():
     # implement something nice!

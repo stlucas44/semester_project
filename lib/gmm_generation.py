@@ -228,7 +228,7 @@ class Gmm:
         mesh = pymesh.meshio.form_mesh(np.asarray(init_mesh.vertices),
                                        np.asarray(init_mesh.triangles))
 
-        means, aeras = get_centroids(mesh)
+        means, areas = get_centroids(mesh)
         face_vert = get_face_verts(mesh.vertices, mesh.faces)
 
         tri_covars = get_tri_covar(face_vert)
@@ -240,6 +240,7 @@ class Gmm:
 
         self.means = means
         self.covariances = tri_covars
+        self.weights = areas/sum(areas)
         self.num_gaussians = len(means)
         self.measured = np.zeros((self.num_gaussians,), dtype=bool)
 
@@ -305,6 +306,7 @@ def merge_gmms(gmmA, maskA, gmmB, maskB):
     merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0)
     merged_gmm.covariances = np.concatenate([gmmA.covariances[maskA], gmmB.covariances[maskB]], axis = 0)
     '''
+
     merged_gmm.precs = np.concatenate([gmmA.precs[maskA], gmmB.precs[maskB]], axis = 0)
     merged_gmm.precs_chol = np.concatenate([gmmA.precs_chol[maskA], gmmB.precs_chol[maskB]], axis = 0)
     merged_gmm.measured = np.concatenate([gmmA.measured[maskA], gmmB.measured[maskB]], axis = 0)
@@ -316,6 +318,7 @@ def merge_gmms(gmmA, maskA, gmmB, maskB):
     merged_gmm.gmm_generator.covariances_ = gmmA.covariances
     merged_gmm.gmm_generator.precisions_ = gmmA.precs
     merged_gmm.gmm_generator.precisions_cholesky_ = gmmA.precs_chol
+
     '''
 
     #TODO remove_dublicastes

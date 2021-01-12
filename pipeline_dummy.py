@@ -66,8 +66,8 @@ def main():
 
     # fit via direct gmm
     prior_gmm = Gmm()
-    prior_gmm.mesh_gmm(view_point_mesh, n = 200, recompute = False, path = tmp_gmm_mesh)
-    #prior_gmm.naive_mesh_gmm(view_point_mesh)
+    #prior_gmm.mesh_gmm(view_point_mesh, n = 200, recompute = False, path = tmp_gmm_mesh)
+    prior_gmm.naive_mesh_gmm(view_point_mesh)
     #prior_gmm.naive_mesh_gmm(prior_mesh)
 
     ##### register and merge
@@ -83,9 +83,15 @@ def main():
 
     # perform refinement
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
-    merged_gmm_lists = merge.gmm_merge(prior_gmm, measurement_gmm)
+    merged_gmm_lists, final_gmm, final_gmm_tuple = merge.gmm_merge(prior_gmm, measurement_gmm)
+    
+    mpl_visualize(final_gmm)
+    mpl_visualize(*final_gmm_tuple, colors = ["r", "g"])
+
     for gmm_pair in merged_gmm_lists:
-        mpl_visualize(*gmm_pair, colors = ['r', 'b'], cov_scale = 2.0)
+        mpl_visualize(prior_gmm, measurement_gmm, *gmm_pair,
+                      colors = ['y', 'g', 'r', 'b'], cov_scale = 2.0,
+                      alpha = 0.2)
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
@@ -96,7 +102,7 @@ def main():
     #presentation_plots(measurement_registered, prior_mesh, measurement_gmm, prior_gmm)
 
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
-    mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['r', 'b', 'g']) #registration
+    mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['y', 'r', 'b', 'g']) #registration
     #mpl_visualize(measurement_pc, measurement_gmm, cov_scale = cov_scale)# pc vs gmm
     #mpl_visualize(measurement_gmm, cov_scale = cov_scale)
 

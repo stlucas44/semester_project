@@ -58,41 +58,56 @@ def run2(): # vary variances
     plt.show()
 
 def run3(): # vary sample sizes (keeping covs as in run 2)
-        prior = Gmm(means = [0.0], covariances = [5.0])
-        prior.num_gaussians = 1
-        m_means = np.arange(0, 10, 1).reshape((-1,1))
-        m_covs = 1.0 * np.ones(m_means.shape)
-        measurement = Gmm(means = m_means, covariances = m_covs)
-        measurement.num_gaussians = len(m_means)
+    prior = Gmm(means = [0.0], covariances = [5.0])
+    prior.num_gaussians = 1
+    m_means = np.arange(0, 10, 1).reshape((-1,1))
+    m_covs = 1.0 * np.ones(m_means.shape)
+    measurement = Gmm(means = m_means, covariances = m_covs)
+    measurement.num_gaussians = len(m_means)
 
-        sample_sizes = 2 * np.logspace(0,3, num = 10)
-        for sample in sample_sizes:
-            print("sample_size = ", sample)
-            result, t = merge.gmm_merge(prior, measurement, sample_size = sample)
-            #vis_update(prior, measurement, result)
+    sample_sizes = 2 * np.logspace(0,3, num = 10)
+    for sample in sample_sizes:
+        print("sample_size = ", sample)
+        result, t = merge.gmm_merge(prior, measurement, sample_size = sample)
+        #vis_update(prior, measurement, result)
 
-            plt.plot(measurement.means, result, label = "sample_size = " + str(sample))
+        plt.plot(measurement.means, result, label = "sample_size = " + str(sample))
 
-            print(result)
-        plt.legend()
-        plt.show()
+        print(result)
+    plt.legend()
+    plt.show()
 
 def run4(): # vary sample sizes (keeping covs as in run 2)
-        prior = Gmm(means = [0.0], covariances = [5.0])
-        prior.num_gaussians = 1
-        m_means = np.arange(0, 10, 1).reshape((-1,1))
-        m_covs = 1.0 * np.ones(m_means.shape)
-        measurement = Gmm(means = m_means, covariances = m_covs)
-        measurement.num_gaussians = len(m_means)
+    prior = Gmm(means = [0.0], covariances = [5.0])
+    prior.num_gaussians = 1
+    m_means = np.arange(0, 10, 1).reshape((-1,1))
+    m_covs = 1.0 * np.ones(m_means.shape)
+    measurement = Gmm(means = m_means, covariances = m_covs)
+    measurement.num_gaussians = len(m_means)
 
-        sample_sizes = np.linspace(1.0,10.0, num = 10)
-        for sample in sample_sizes:
-            print("sample_size = ", 1/sample)
-            result, t = merge.gmm_merge(prior, measurement, sample_size = 1000, sample_ratio = 1/sample)
-            plt.plot(measurement.means, result, label = "sample_size = " + str(1/sample))
-            print(result)
-        plt.legend()
-        plt.show()
+    sample_sizes = np.linspace(1.0,10.0, num = 10)
+    for sample in sample_sizes:
+        print("sample_size = ", 1/sample)
+        result, t = merge.gmm_merge(prior, measurement, sample_size = 1000, sample_ratio = 1/sample)
+        plt.plot(measurement.means, result, label = "sample_size = " + str(1/sample))
+        print(result)
+    plt.legend()
+    plt.show()
+
+def present_merge(): # vary sample sizes (keeping covs as in run 2)
+    prior = Gmm(means = [0.0, 5.0], covariances = [5.0, 1.0])
+    prior.num_gaussians = 1
+    m_means =[-10.0, -1.0, 1.0]
+    m_covs = 1.0 * np.ones(m_means.shape)
+    measurement = Gmm(means = m_means, covariances = m_covs)
+    measurement.num_gaussians = len(m_means)
+
+    result, t = merge.gmm_merge(prior, measurement)
+    vis_update(prior, measurement, result, path="imgs/1dMerge.png")
+    #vis_update(prior, measurement, [not elem for elem in result],
+    #           path="imgs/1dMerge.png")
+    plt.legend()
+    plt.show()
 
 
 def vis_update(prior, measurement, result = None, path = None):
