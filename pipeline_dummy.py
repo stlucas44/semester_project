@@ -66,9 +66,9 @@ def main():
 
     # fit via direct gmm
     prior_gmm = Gmm()
-    #prior_gmm.mesh_gmm(view_point_mesh, n = 200, recompute = False, path = tmp_gmm_mesh)
-    prior_gmm.naive_mesh_gmm(view_point_mesh)
-    #prior_gmm.naive_mesh_gmm(prior_mesh)
+    #prior_gmm.mesh_gmm(view_point_mesh, n = 300, recompute = False, path = tmp_gmm_mesh)
+    prior_gmm.naive_mesh_gmm(view_point_mesh, mesh_std = 0.1)
+    mpl_visualize(prior_gmm, cov_scale = cov_scale, colors = ['r'])
 
     ##### register and merge
     # compute registration
@@ -83,13 +83,17 @@ def main():
 
     # perform refinement
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
-    merged_gmm_lists, final_gmm, final_gmm_tuple = merge.gmm_merge(prior_gmm, measurement_gmm)
-    
-    mpl_visualize(final_gmm)
-    mpl_visualize(*final_gmm_tuple, colors = ["r", "g"])
+    merged_gmm_lists, final_gmm, final_gmm_tuple = merge.gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.05, sample_size = 5)
+
+    #mpl_visualize(final_gmm)
+    mpl_visualize(*final_gmm_tuple, colors = ["g", "r"],
+                  cov_scale = 2.0, show_mean = False,
+                  view_angle = view_point_angle, show_z = False)
+    #mpl_visualize(*final_gmm_tuple, colors = ["g", "r"])
+
 
     for gmm_pair in merged_gmm_lists:
-        mpl_visualize(prior_gmm, measurement_gmm, *gmm_pair,
+        mpl_visualize(*gmm_pair,
                       colors = ['y', 'g', 'r', 'b'], cov_scale = 2.0,
                       alpha = 0.2)
 

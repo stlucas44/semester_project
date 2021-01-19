@@ -11,7 +11,7 @@ from lib import merge
 def main():
     # steps for evaluation
     # generate two or more gmms with only few gaussians
-    #run1()
+    run1()
 
     # now we run this with different scales of n?
     #run2()
@@ -32,10 +32,16 @@ def run1(): # vary means
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
 
-    result, p_value = merge.gmm_merge(prior, measurement, p_crit = 0.95)
+    p_crit = 0.1
+    sample_size = 2
+    result, p_value = merge.gmm_merge(prior, measurement,
+                                      p_crit = p_crit,
+                                      sample_size = sample_size,
+                                      exit_early = True)
 
     print(p_value)
     vis_update(prior, measurement, p_value)
+    plt.plot([0, len(p_value)], [p_crit, p_crit], 'r')
     #vis_update(prior, measurement, [not elem for elem in result],
     #           path="imgs/1dMerge.png")
     plt.legend()
@@ -52,7 +58,7 @@ def run2(): # vary variances
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
 
-    result, t = merge.gmm_merge(prior, measurement)
+    result, t = merge.gmm_merge(prior, measurement, exit_early = True)
     vis_update(prior, measurement, t)
     #vis_update(prior, measurement, [not elem for elem in result],
     #           path="imgs/1dMerge.png")
@@ -60,10 +66,10 @@ def run2(): # vary variances
     plt.show()
 
 def run3(): # vary sample sizes (keeping covs as in run 2)
-    prior = Gmm(means = [0.0], covariances = [5.0])
+    prior = Gmm(means = [0.0], covariances = [2.0])
     prior.num_gaussians = 1
-    m_means = np.arange(0, 20, 2).reshape((-1,1))
-    m_covs = 5.0 * np.ones(m_means.shape)
+    m_means = np.arange(0, 10, 1).reshape((-1,1))
+    m_covs = 2.0 * np.ones(m_means.shape)
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
 
@@ -72,7 +78,7 @@ def run3(): # vary sample sizes (keeping covs as in run 2)
     ax = vis_update(prior, measurement)
     for sample in sample_sizes:
         print("sample_size = ", sample)
-        result, p_value = merge.gmm_merge(prior, measurement, p_crit = 0.95, sample_size = sample)
+        result, p_value = merge.gmm_merge(prior, measurement, p_crit = 0.1, sample_size = sample, exit_early = True)
         ax[2].plot(measurement.means, p_value, label = "sample_size = " + str(sample))
 
         print(result)
@@ -92,7 +98,7 @@ def run4(): # vary sample sizes (keeping covs as in run 2)
     sample_sizes = np.linspace(1.0,10.0, num = 10)
     for sample in sample_sizes:
         print("sample_size = ", 1/sample)
-        result, t = merge.gmm_merge(prior, measurement, sample_size = 1000, sample_ratio = 1/sample)
+        result, t = merge.gmm_merge(prior, measurement, sample_size = 1000, sample_ratio = 1/sample, exit_early = True)
         plt.plot(measurement.means, p_value, label = "sample_size = " + str(1/sample))
         print(result)
     plt.legend()
@@ -106,7 +112,7 @@ def present_merge(): # vary sample sizes (keeping covs as in run 2)
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
 
-    result, t = merge.gmm_merge(prior, measurement)
+    result, t = merge.gmm_merge(prior, measurement, exit_early = True)
     vis_update(prior, measurement, result, path="imgs/1dMerge.png")
     #vis_update(prior, measurement, [not elem for elem in result],
     #           path="imgs/1dMerge.png")

@@ -10,6 +10,8 @@ from lib import gmm_generation, visualization
 import open3d as o3d
 import trimesh
 
+from numba import jit, cuda
+
 def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.0, 180.0], angular_resolution = 1.0):
     # cut all occluded triangles
     '''
@@ -155,8 +157,9 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
     '''
     return return_pc
 
-
-def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100, sample_ratio = 1.0):
+#@jit(target ="cuda")
+def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
+              sample_ratio = 1.0, exit_early = False):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -200,6 +203,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100, samp
     score = np.zeros((len(prior_range),len(measurement_range)))
 
     for i in prior_range:
+        if( i % 10 == 0):
+            print("intersection computing: ", i, " of ", len(prior_range))
         mean = prior_gmm.means[i]
         cov = prior_gmm.covariances[i]
 
@@ -222,7 +227,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100, samp
             plt.plot(measurement_range, t)
             plt.show()
         #print(p_value)
-        return result, p_value
+        if exit_early:
+            return result, p_value
 
         #print("mask created")
 
@@ -314,17 +320,23 @@ def get_intersection_type_hotelling(meanA, covA, meanB, covB, p_crit = 0.95, sam
     nA = sample_size
     nB =sample_ratio * sample_size
 
-    #t_squared = get_t_squared(meanA, covA, nA, meanB, covB, nB)
-    t_squared = get_t_squared2(meanA, covA, nA, meanB, covB, nB)
+    t_squared = get_t_squared(meanA, covA, nA, meanB, covB, nB)
+    #t_squared = get_t_squared2(meanA, covA, nA, meanB, covB, nB)
     v = get_v(covA, nA, covB, nB)
     #print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
 
     # trying to fix hotelling:
     p = v # sometimes assigned as p, v is the degree of freedom!
-    statistic = t_squared * (nA+nB-p-1)/(p*(nA+nB-2))
-    F = scipy.stats.f(p, nA+nB-p-1)
+    # found approximation of degrees of freedom as this: https://en.wikipedia.org/wiki/Behrens%E2%80%93Fisher_problem
+    #print("v = ", v)
+    #p = 6
+    # trying alternate
+    statistic = t_squared * (nA + nB-p-1)/(p*(nA + nB-2))
+
+    F = scipy.stats.f(p, nA + nB - p - 1)
 
     p_value = 1 - F.cdf(statistic)
+
 
     return p_value > p_crit, p_value
 
