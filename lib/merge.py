@@ -156,7 +156,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
     return return_pc
 
 
-def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, sample_ratio = 1):
+def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100, sample_ratio = 1.0):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -204,24 +204,25 @@ def gmm_merge(prior_gmm, measurement_gmm, min_overlap = 1.0, sample_size = 100, 
         cov = prior_gmm.covariances[i]
 
         #mask = get_intersection_type_simple(measurement_gmm.means, mean = mean, cov = cov, min_likelihood = 0.1)
-        t = np.zeros((measurement_gmm.num_gaussians,))
+        p_value = np.zeros((measurement_gmm.num_gaussians,))
         result = np.zeros((measurement_gmm.num_gaussians,),dtype=bool)
 
         for j in measurement_range:
-            local_result, t[j] = get_intersection_type_hotelling(mean, cov,
+            local_result, p_value[j] = get_intersection_type_hotelling(mean, cov,
                                     measurement_gmm.means[j],
                                     measurement_gmm.covariances[j],
+                                    p_crit = p_crit,
                                     sample_size = sample_size,
                                     sample_ratio = sample_ratio)
             result[j] = local_result
-            match[i,j] = not local_result
-            score[i,j] = t[j]
+            match[i,j] = local_result
+            score[i,j] = p_value[j]
         plot = False
         if plot:
             plt.plot(measurement_range, t)
             plt.show()
-        #print(t)
-        #return result, t
+        #print(p_value)
+        return result, p_value
 
         #print("mask created")
 
@@ -296,7 +297,7 @@ def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
 
     return appearence_likelihood > min_likelihood
 
-def get_intersection_type_hotelling(meanA, covA, meanB, covB, sample_size = 100.0, sample_ratio = 1.0):
+def get_intersection_type_hotelling(meanA, covA, meanB, covB, p_crit = 0.95, sample_size = 100.0, sample_ratio = 1.0):
     #source: https://en.wikipedia.org/wiki/Hotelling%27s_T-squared_distribution#Two-sample_statistic
     if isinstance(meanA, float):
         meanA = np.array([meanA]).reshape((1,1))
@@ -318,9 +319,17 @@ def get_intersection_type_hotelling(meanA, covA, meanB, covB, sample_size = 100.
     v = get_v(covA, nA, covB, nB)
     #print("t² = ", t_squared, "t = ", np.sqrt(t_squared))
 
-    return t_squared >= v, np.sqrt(t_squared)
+    # trying to fix hotelling:
+    p = v # sometimes assigned as p, v is the degree of freedom!
+    statistic = t_squared * (nA+nB-p-1)/(p*(nA+nB-2))
+    F = scipy.stats.f(p, nA+nB-p-1)
+
+    p_value = 1 - F.cdf(statistic)
+
+    return p_value > p_crit, p_value
 
 def get_t_squared(meanA, covA, nA, meanB, covB, nB):
+    # this is similar to https://www.r-bloggers.com/2020/10/hotellings-t2-in-julia-python-and-r/
     S = ((nA - 1.0) * covA + (nB - 1.0) * covB) / (nA + nB - 2.0)
     if S.shape == (1,):
         S = S.reshape((1,1))
@@ -334,7 +343,6 @@ def get_t_squared2(y_1, S_1, n_1, y_2, S_2, n_2):
         S_2 = np.reshape(S_2, (1,1))
 
     return (y_1 - y_2).T.dot(np.linalg.inv(S_1/n_1 + S_2/n_2)).dot(y_1 - y_2)
-
 
 def get_v(S_1, n_1, S_2, n_2):
     Sn1 = S_1/n_1

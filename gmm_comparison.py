@@ -19,7 +19,7 @@ def main():
     # try different sample_sizes
     run3()
     # try different ratios
-    run4()
+    #run4()
 
     pass
 
@@ -27,13 +27,15 @@ def run1(): # vary means
     #visualize overlaying distribution and
     prior = Gmm(means = [0.0], covariances = [5.0])
     prior.num_gaussians = 1
-    m_means = np.arange(0, 10, 1).reshape((-1,1))
-    m_covs = 1.0 * np.ones(m_means.shape)
+    m_means = np.arange(0, 20, 1).reshape((-1,1))
+    m_covs = 5.0 * np.ones(m_means.shape)
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
 
-    result, t = merge.gmm_merge(prior, measurement)
-    vis_update(prior, measurement, result)
+    result, p_value = merge.gmm_merge(prior, measurement, p_crit = 0.95)
+
+    print(p_value)
+    vis_update(prior, measurement, p_value)
     #vis_update(prior, measurement, [not elem for elem in result],
     #           path="imgs/1dMerge.png")
     plt.legend()
@@ -51,7 +53,7 @@ def run2(): # vary variances
     measurement.num_gaussians = len(m_means)
 
     result, t = merge.gmm_merge(prior, measurement)
-    vis_update(prior, measurement, result)
+    vis_update(prior, measurement, t)
     #vis_update(prior, measurement, [not elem for elem in result],
     #           path="imgs/1dMerge.png")
     plt.legend()
@@ -60,36 +62,38 @@ def run2(): # vary variances
 def run3(): # vary sample sizes (keeping covs as in run 2)
     prior = Gmm(means = [0.0], covariances = [5.0])
     prior.num_gaussians = 1
-    m_means = np.arange(0, 10, 1).reshape((-1,1))
-    m_covs = 1.0 * np.ones(m_means.shape)
+    m_means = np.arange(0, 20, 2).reshape((-1,1))
+    m_covs = 5.0 * np.ones(m_means.shape)
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
 
-    sample_sizes = 2 * np.logspace(0,3, num = 10)
+    max_log_space = 5
+    sample_sizes = 2 * np.logspace(0,max_log_space, num = max_log_space + 1)
+    ax = vis_update(prior, measurement)
     for sample in sample_sizes:
         print("sample_size = ", sample)
-        result, t = merge.gmm_merge(prior, measurement, sample_size = sample)
-        #vis_update(prior, measurement, result)
-
-        plt.plot(measurement.means, result, label = "sample_size = " + str(sample))
+        result, p_value = merge.gmm_merge(prior, measurement, p_crit = 0.95, sample_size = sample)
+        ax[2].plot(measurement.means, p_value, label = "sample_size = " + str(sample))
 
         print(result)
+        print(p_value)
     plt.legend()
     plt.show()
 
 def run4(): # vary sample sizes (keeping covs as in run 2)
     prior = Gmm(means = [0.0], covariances = [5.0])
     prior.num_gaussians = 1
-    m_means = np.arange(0, 10, 1).reshape((-1,1))
-    m_covs = 1.0 * np.ones(m_means.shape)
+    m_means = np.arange(0, 20, 1).reshape((-1,1))
+    m_covs = 5.0 * np.ones(m_means.shape)
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
+
 
     sample_sizes = np.linspace(1.0,10.0, num = 10)
     for sample in sample_sizes:
         print("sample_size = ", 1/sample)
         result, t = merge.gmm_merge(prior, measurement, sample_size = 1000, sample_ratio = 1/sample)
-        plt.plot(measurement.means, result, label = "sample_size = " + str(1/sample))
+        plt.plot(measurement.means, p_value, label = "sample_size = " + str(1/sample))
         print(result)
     plt.legend()
     plt.show()
@@ -118,12 +122,12 @@ def vis_update(prior, measurement, result = None, path = None):
             fig, ax = plt.subplots(3, 1, constrained_layout=True, sharex = True)
             vis_result(measurement.means, result, ax[2], colors.T)
         else:
-            fig, ax = plt.subplots(3, 1, constrained_layout=True)
+            fig, ax = plt.subplots(3, 1, constrained_layout=True, sharex = True)
             vis_result(measurement.covariances, result, ax[2], colors.T)
 
         ax[2].set_title('T-test Result')
     else:
-        fig, ax = plt.subplots(2, 1, constrained_layout=True)
+        fig, ax = plt.subplots(3, 1, constrained_layout=True, sharex = True)
 
 
     ax[1].set_title('Prior')
@@ -135,12 +139,14 @@ def vis_update(prior, measurement, result = None, path = None):
     if path is not None:
         plt.savefig(path)
 
+    return ax
+
 def vis_gmm(gmm, ax, label = "", color= None):
     range = np.arange(0, len(gmm.means))
     if color is None:
         color = np.random.rand(3,gmm.num_gaussians)
     for i in range:
-        print(gmm.covariances[i])
+        #print(gmm.covariances[i])
         x = np.linspace(gmm.means[i] - 3 * np.sqrt(gmm.covariances[i]),
                         gmm.means[i] + 3 * np.sqrt(gmm.covariances[i]))
         y = multivariate_normal.pdf(x, mean = gmm.means[i],
