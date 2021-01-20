@@ -6,6 +6,8 @@ import sys
 import pickle
 import pymesh
 
+import matplotlib.pyplot as plt
+
 sys.path.append('/home/lucas/semester_project/direct_gmm') # TODO(stlucas) find solution for this!
 from mixture import GaussianMixture
 
@@ -231,8 +233,10 @@ class Gmm:
         means, areas = get_centroids(mesh)
         face_vert = get_face_verts(mesh.vertices, mesh.faces)
 
-        tri_covars = get_tri_covar(face_vert)
+        #tri_covars = get_tri_covar(face_vert)
         #tri_covars = get_tri_covar_steiner(face_vert, means, mesh_std) -> not working yet!
+        #tri_covars = get_tri_covar_steiner_numeric(face_vert, means, mesh_std)
+        tri_covars = the_return_ong(face_vert, means, mesh_std)
 
         #guarantee covariances invertibility
         k = 0.001
@@ -384,9 +388,165 @@ def get_tri_covar_steiner(tris, centroids, mesh_std):
     cov_unshaped = np.asarray([(l_0 * s_0), (l_1 * s_1), (l_2 * s_2)])
     print(cov_unshaped.shape)
 
-    # TODO: make this transform work!
+    # TODO: make this transform work! --> bug tetected!!
     range = np.arange(1, len(l_1))
     for i in range:
         cov[i] = cov_unshaped[:,i,:].T
 
     return cov
+
+def get_tri_covar_steiner_numeric(tris, centroids, mesh_std):
+    print(tris.shape)
+    # source: https://en.wikipedia.org/wiki/Steiner_ellipse
+
+    AB = tris[:,1, :] - tris[:, 0, :]
+    #print(tris[1:10, :, :])
+    AC = tris[:,2, :] - tris[:, 0, :]
+    BC = tris[:,2, :] - tris[:, 1, :]
+
+    SC = tris[:,2,:] - centroids
+
+    '''
+    A = np.asarray([-1.0, -1.0, -1.0]).reshape((-1,3))
+    B = np.asarray([1.0, -1.0, -1.0]).reshape((-1,3))
+    C = np.asarray([0.0, 2.0, 1.0]).reshape((-1,3))
+    S = np.asarray([0.0, 0.0, -(1.0/3.0)]).reshape((-1,3))
+    AB = B - A
+    SC = C - S
+
+
+    print(A, B, S, AB, SC)
+    '''
+
+    # determine SC as the longest avaliable! (actually does not )
+
+    def p_steiner(AB, SC, t):
+        t_diag = np.diag(t)
+        print(np.dot(np.cos(t_diag),SC).shape)
+        print(np.dot(1/np.sqrt(3) * np.sin(t_diag), AB).shape)
+        return np.dot(np.cos(t_diag),SC)  + np.dot(1/np.sqrt(3) * np.sin(t_diag), AB)
+
+    f1 = SC
+    f2 = 1.0/np.sqrt(3) * AB
+
+    cot_2t = np.divide((np.square(f1).sum(axis = 1) - np.square(f2).sum(axis = 1)),
+             (2.0 * np.multiply(f1, f2).sum(axis = 1)))
+    t_0 = np.arctan2(1, cot_2t) / 2
+
+    half_axis_0 = p_steiner(AB, SC, t_0)
+    half_axis_1 = p_steiner(AB, SC, t_0 + (np.pi/2.0))
+    #return
+
+
+    cov = np.zeros(tris.shape)
+
+    for i in np.arange(0, len(half_axis_1)):
+        cov[i, :, 0] = np.round(half_axis_0[i], 5)
+        cov[i, :, 1] = np.round(half_axis_1[i], 5)
+        #print("the two half axis:", cov[i, :, 0], cov[i, :, 1])
+
+
+        third_axis = np.cross(half_axis_0[i], half_axis_1[i])
+        #print("orthogonality:", np.dot(half_axis_0[i], half_axis_1[i]))
+        cov[i, :, 2] = np.square(mesh_std) * third_axis / np.linalg.norm(third_axis)
+
+        #make it invertible!
+        cov[i, :, :] = nearPSD(cov[i, :,:],epsilon=1e-6)
+
+
+    '''
+    cov_unshaped = np.asarray([(l_0 * s_0), (l_1 * s_1), (l_2 * s_2)])
+    print(cov_unshaped.shape)
+
+    # TODO: make this transform work! --> bug tetected!!
+    range = np.arange(1, len(l_1))
+    for i in range:
+        cov[i] = cov_unshaped[:,i,:].T
+    '''
+    return cov
+
+def the_return_ong(tris, centroids, mesh_std):
+    cov = np.zeros(tris.shape)
+
+
+    AB = tris[:,1, :] - tris[:, 0, :]
+    #print(tris[1:10, :, :])
+    AC = tris[:,2, :] - tris[:, 0, :]
+    BC = tris[:,2, :] - tris[:, 1, :]
+
+    SC = tris[:,2,:] - centroids
+
+    for i in np.arange(0, len(AB)):
+        ab = AB[i]
+        sc = SC[i]
+
+        # compute transform
+        x = sc / np.linalg.norm(sc)
+        z = np.cross(sc, ab)
+        z = z / np.linalg.norm(z)
+        y = np.cross(x, z)
+
+        transform = np.asarray([x, y, z]).T
+
+        ab_l = np.matmul(transform.T, ab).round(6)
+        sc_l = np.matmul(transform.T, sc).round(6)
+
+        a = np.matmul(transform.T, tris[i,0, :]).round(6)
+        b = np.matmul(transform.T, tris[i,1, :]).round(6)
+        c = np.matmul(transform.T, tris[i,2, :]).round(6)
+        s = np.matmul(transform.T, centroids[i]).round(6)
+
+        #print(" a, b, c: ", a, b, c)
+        #print(" Local vectors:" , ab_l, sc_l)
+
+        def p_steiner(AB, SC, t):
+            return np.multiply(np.cos(t),SC)  + np.multiply (1/np.sqrt(3) * np.sin(t), AB)
+
+        f1 = sc_l
+        f2 = 1.0/np.sqrt(3) * ab_l
+
+        cot_2t = np.divide((np.square(f1).sum() - np.square(f2).sum()),
+                 (2.0 * np.multiply(f1, f2).sum()))
+        t_0 = np.arctan2(1, cot_2t) / 2
+
+        #computing the half axis
+        ha_0 = p_steiner(ab_l, sc_l, t_0)
+        ha_1 = p_steiner(ab_l, sc_l, t_0 + (0.5 * np.pi))
+
+        '''
+        ha_2 = p_steiner(ab_l, sc_l, t_0 + (np.pi))
+        ha_3 = p_steiner(ab_l, sc_l, t_0 - (0.5 * np.pi))
+        ha = [ha_0, ha_1, ha_2, ha_3]
+
+        print("colinearity:", np.cross(ha_0 ,ha_1))
+        plt.plot(a[0], a[1], "g.")
+        plt.plot(b[0], b[1], "g.")
+        plt.plot(c[0], c[1], "g.")
+        plt.plot(s[0], s[1], "r.")
+
+        for axis in ha:
+            plt.plot([0.0, axis[0]], [0.0, axis[1]])
+        plt.axis('equal')
+        plt.show()
+        '''
+
+        third_axis = np.square(mesh_std) * z
+
+        local_cov = np.asarray([ha_0, ha_1, third_axis]).T
+        cov[i] = np.matmul(transform, local_cov)
+
+    return cov
+
+
+#from: https://stackoverflow.com/questions/10939213/how-can-i-calculate-the-nearest-positive-semi-definite-matrix
+
+def nearPSD(A,epsilon=0):
+   n = A.shape[0]
+   eigval, eigvec = np.linalg.eig(A)
+   val = np.matrix(np.maximum(eigval,epsilon))
+   vec = np.matrix(eigvec)
+   T = 1/(np.multiply(vec,vec) * val.T)
+   T = np.matrix(np.sqrt(np.diag(np.array(T).reshape((n)) )))
+   B = T * vec * np.diag(np.array(np.sqrt(val)).reshape((n)))
+   out = B*B.T
+   return(out)
