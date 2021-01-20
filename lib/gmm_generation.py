@@ -236,11 +236,11 @@ class Gmm:
         #tri_covars = get_tri_covar(face_vert)
         #tri_covars = get_tri_covar_steiner(face_vert, means, mesh_std) -> not working yet!
         #tri_covars = get_tri_covar_steiner_numeric(face_vert, means, mesh_std)
-        tri_covars = the_return_ong(face_vert, means, mesh_std)
+        tri_covars = the_return_ong(face_vert, means, areas, mesh_std)
 
         #guarantee covariances invertibility
         k = 0.001
-        tri_covars = tri_covars + k * np.identity(3)
+        #tri_covars = tri_covars + k * np.identity(3)
 
         self.means = means
         self.covariances = tri_covars
@@ -254,13 +254,14 @@ class Gmm:
         counter = 0
 
         def is_pos_def(x):
-            return np.all(np.linalg.eigvals(x) > 0)
+            U, S, V = np.linalg.svd(x)
+            return np.all(S > 0)
 
         for cov in self.covariances:
             if not is_pos_def(cov):
-                print("negative semidefinite covariance matrix!")
+                #print("negative semidefinite covariance matrix!")
                 continue
-
+            continue # DOTO fix the chol inversion!!
             self.precs[counter, :, :] = np.linalg.inv(cov)
             self.precs_chol[counter, :, :] = np.linalg.inv(scipy.linalg.cholesky(cov))
 
@@ -465,15 +466,12 @@ def get_tri_covar_steiner_numeric(tris, centroids, mesh_std):
     '''
     return cov
 
-def the_return_ong(tris, centroids, mesh_std):
+def the_return_ong(tris, centroids, areas, mesh_std):
     cov = np.zeros(tris.shape)
 
-
     AB = tris[:,1, :] - tris[:, 0, :]
-    #print(tris[1:10, :, :])
     AC = tris[:,2, :] - tris[:, 0, :]
     BC = tris[:,2, :] - tris[:, 1, :]
-
     SC = tris[:,2,:] - centroids
 
     for i in np.arange(0, len(AB)):
@@ -491,14 +489,6 @@ def the_return_ong(tris, centroids, mesh_std):
         ab_l = np.matmul(transform.T, ab).round(6)
         sc_l = np.matmul(transform.T, sc).round(6)
 
-        a = np.matmul(transform.T, tris[i,0, :]).round(6)
-        b = np.matmul(transform.T, tris[i,1, :]).round(6)
-        c = np.matmul(transform.T, tris[i,2, :]).round(6)
-        s = np.matmul(transform.T, centroids[i]).round(6)
-
-        #print(" a, b, c: ", a, b, c)
-        #print(" Local vectors:" , ab_l, sc_l)
-
         def p_steiner(AB, SC, t):
             return np.multiply(np.cos(t),SC)  + np.multiply (1/np.sqrt(3) * np.sin(t), AB)
 
@@ -513,7 +503,17 @@ def the_return_ong(tris, centroids, mesh_std):
         ha_0 = p_steiner(ab_l, sc_l, t_0)
         ha_1 = p_steiner(ab_l, sc_l, t_0 + (0.5 * np.pi))
 
+        local_area = np.pi * np.linalg.norm(ha_0) * np.linalg.norm(ha_1)
+
         '''
+        a = np.matmul(transform.T, tris[i,0, :]).round(6)
+        b = np.matmul(transform.T, tris[i,1, :]).round(6)
+        c = np.matmul(transform.T, tris[i,2, :]).round(6)
+        s = np.matmul(transform.T, centroids[i]).round(6)
+
+        #print(" a, b, c: ", a, b, c)
+        #print(" Local vectors:" , ab_l, sc_l)
+
         ha_2 = p_steiner(ab_l, sc_l, t_0 + (np.pi))
         ha_3 = p_steiner(ab_l, sc_l, t_0 - (0.5 * np.pi))
         ha = [ha_0, ha_1, ha_2, ha_3]
@@ -535,7 +535,18 @@ def the_return_ong(tris, centroids, mesh_std):
         local_cov = np.asarray([ha_0, ha_1, third_axis]).T
         cov[i] = np.matmul(transform, local_cov)
 
-    return cov
+        '''
+        U, S, V = np.linalg.svd(local_cov)
+        print("Eigs of local cov: ", S)
+
+        U, S, V = np.linalg.svd(cov[i])
+        print("Eigs of global cov: ", S)
+
+        print("area ratio: ellipse, triangle: ", local_area / areas[i])
+        area ratio is usually 2.418
+        '''
+
+    return 0.02 * areas[i] / local_area * cov #np.sqrt(cov) # bv
 
 
 #from: https://stackoverflow.com/questions/10939213/how-can-i-calculate-the-nearest-positive-semi-definite-matrix
