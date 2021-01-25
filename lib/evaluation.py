@@ -5,7 +5,7 @@ import trimesh
 from lib import loader
 
 
-def eval_quality(true_mesh, meas_mesh, num_points = 500):
+def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
     #pseudo shift
     vertices = np.asarray(meas_mesh.vertices)
     #vertices[:,1] = vertices[:,1] + 0.5
@@ -32,3 +32,6 @@ def eval_quality(true_mesh, meas_mesh, num_points = 500):
     error_pc.points = o3d.utility.Vector3dVector(sampled_points)
 
     return error_pc
+
+def eval_quality(gmm_tuple, mesh_true, pc_true):
+    return None

@@ -10,16 +10,38 @@ def load_mesh(path, scale = 1.0):
     return scale_o3d_object(mesh, scale)
 
 def load_unit_mesh(type = 'flat'):
+    mesh = o3d.geometry.TriangleMesh()
+
     if type == 'flat':
-        mesh = o3d.geometry.TriangleMesh()
-
         vertices = np.asarray([[0.0, 0.0, 0.0],
-                                          [1.0, 0.0, 0.0],
-                                          [0.0, 1.0, 0.0]])
-        mesh.vertices = o3d.utility.Vector3dVector(vertices)
-
+                               [1.0, 0.0, 0.0],
+                               [0.0, 1.0, 0.0]])
         triangles = [[0.0,1.0,2.0]]
-        mesh.triangles = o3d.utility.Vector3iVector(triangles)
+
+    elif type == "3d":
+        vertices = np.asarray([[1.0, 0.0, 0.0],
+                               [0.0, 0.0, 1.0],
+                               [0.0, 1.0, 0.0]])
+        triangles = [[0.0,1.0,2.0]]
+
+    elif type == "2trisA":
+        vertices = np.asarray([[1.0, 0.0, 0.0],
+                               [-1.0, 0.0, 0.0],
+                               [0.0, 1.0, 0.0],
+                               [0.0, -1.0, 0.0]])
+        triangles = [[0.0, 1.0, 2.0],
+                     [0.0, 1.0, 3.0]]
+    elif type == "2trisB":
+        vertices = np.asarray([[1.0, 0.0, 0.0],
+                               [-1.0, 0.0, 0.0],
+                               [0.0, 1.0, 0.0],
+                               [0.0, -1.0, 0.0]])
+        triangles = [[0.0, 1.0, 2.0],
+                     [0.0, 1.0, 3.0]]
+
+
+    mesh.vertices = o3d.utility.Vector3dVector(vertices)
+    mesh.triangles = o3d.utility.Vector3iVector(triangles)
 
     return mesh
 

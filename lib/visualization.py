@@ -65,7 +65,7 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
     if path is not None:
         plt.savefig(path)
 
-    plt.show()
+    plt.draw()
 
 def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
     if ax is None:

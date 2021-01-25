@@ -3,6 +3,7 @@ import numpy as np
 import scipy
 import sklearn.mixture
 import sys
+import open3d as o3d
 import pickle
 import pymesh
 
@@ -39,7 +40,7 @@ class Gmm:
             self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n)
             self.num_train_points = len(pc.points)
 
-            print("starting gmm_fit with num_points = ", self.num_train_points)
+            print("  starting gmm_fit with num_points = ", self.num_train_points)
 
             self.gmm_generator.fit(pc.points)
 
@@ -50,7 +51,7 @@ class Gmm:
                 pickle_out = open(path,"wb")
                 pickle.dump(self.__dict__, pickle_out)
                 pickle_out.close()
-                print("wrote model to ", path)
+                print("  wrote model to ", path)
 
         else:
             if path is not None:
@@ -59,6 +60,7 @@ class Gmm:
                 pickle_in.close()
                 self.__dict__.update(tmp_dict)
 
+        print("  finished gmm_fit")
     def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None, min_points = 100):
         '''
         approach:
@@ -81,6 +83,9 @@ class Gmm:
                     add object to new list
 
         '''
+        self.num_train_points = len(pc.points)
+
+        print("  starting hgmm_fit with num_points = ", self.num_train_points)
 
         all_points = np.asarray(pc.points)
         init_object = HgmmHelper(all_points, weight = 1.0)
@@ -141,8 +146,8 @@ class Gmm:
                 curr_list = copy.deepcopy(next_list)
                 next_list = []
 
-            print("finished hgmm fit")
-            print("Resulted in : ", len(self.means), " mixtures")
+            print("  finished hgmm fit")
+            print("  resulted in : ", len(self.means), " mixtures")
             self.num_gaussians = len(self.means)
             self.means = np.asarray(self.means)
             self.weights = np.asarray(self.weights)
@@ -187,13 +192,13 @@ class Gmm:
                                                  max_iter=max_iter,tol=tol)
 
             self.num_train_points = len(mesh.vertices)
-            print("starting gmm_fit with vertices = ", self.num_train_points)
+            print("  starting mesh_fit with vertices = ", self.num_train_points)
 
             #generate means, covs and faces
             com,a = get_centroids(mesh)
-            print("Com ", com.shape, "      area (a) ", a.shape)
+            print("  Com ", com.shape, "      area (a) ", a.shape)
             face_vert = get_face_verts(mesh.vertices, mesh.faces)
-            print("Face vert: ", face_vert.shape)
+            print("  Face vert: ", face_vert.shape)
 
             data_covar = get_tri_covar(face_vert) # what does it expect?!
 
@@ -214,6 +219,9 @@ class Gmm:
             self.means = self.gmm_generator.means_
             self.weights = self.gmm_generator.weights_
             self.covariances = self.gmm_generator.covariances_
+            self.precs = self.gmm_generator.precisions_
+            self.precs_chol = self.gmm_generator.precisions_cholesky_
+
             if path is not None:
                 pickle_out = open(path,"wb")
                 pickle.dump(self.__dict__, pickle_out)
@@ -226,7 +234,16 @@ class Gmm:
                 pickle_in.close()
                 self.__dict__.update(tmp_dict)
 
+            else:
+                print("  no path for loading mesh specified")
+
+        print("  finished mesh_fit")
+
+
     def naive_mesh_gmm(self, init_mesh, mesh_std = 0.1):
+        self.num_train_points = len(init_mesh.vertices)
+        print("  starting naive_mesh_fit with vertices = ", self.num_train_points)
+
         mesh = pymesh.meshio.form_mesh(np.asarray(init_mesh.vertices),
                                        np.asarray(init_mesh.triangles))
 
@@ -271,36 +288,39 @@ class Gmm:
         self.gmm_generator.covariances_ = self.covariances
         self.gmm_generator.precisions_ = self.precs
         self.gmm_generator.precisions_cholesky_ = self.precs_chol
+        print("  finished naive_mesh_fit ")
 
 
     def sample_from_gmm(self, n_points = 1000):
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
-
-def extract_gmm(gmmA, maskA):
-    merged_gmm = Gmm()
-
-    merged_gmm.num_gaussians = len(gmmA.means[maskA])
-    merged_gmm.means = np.asarray(gmmA.means[maskA])
-    merged_gmm.weights = np.asarray(gmmA.weights[maskA])
-    merged_gmm.covariances = np.asarray(gmmA.covariances[maskA])
-
-    '''
-    self.precs = np.asarray(self.precs)
-    self.precs_chol = np.asarray(self.precs_chol)
-    self.measured = np.ones((self.num_gaussians,), dtype=bool)
+        return_pc = o3d.geometry.PointCloud()
+        return_pc.points = o3d.utility.Vector3dVector(self.samples)
+        return return_pc
 
 
-    merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
-    merged_gmm.gmm_generator.means_ = gmmA.means
-    merged_gmm.gmm_generator.weights_ = gmmA.weights
-    merged_gmm.gmm_generator.covariances_ = gmmA.covariances
-    merged_gmm.gmm_generator.precisions_ = gmmA.precs
-    merged_gmm.gmm_generator.precisions_cholesky_ = gmmA.precs_chol
-    '''
+    def extract_gmm(self, maskA):
+        merged_gmm = Gmm()
 
-    #TODO remove_dublicastes
+        merged_gmm.num_gaussians = len(self.means[maskA])
+        merged_gmm.means = np.asarray(self.means[maskA])
+        merged_gmm.weights = np.asarray(self.weights[maskA]) # crashing here!
+        merged_gmm.covariances = np.asarray(self.covariances[maskA])
 
-    return merged_gmm
+        merged_gmm.precs = np.asarray(self.precs[maskA])
+        merged_gmm.precs_chol = np.asarray(self.precs_chol[maskA])
+        merged_gmm.measured = np.ones((merged_gmm.num_gaussians,), dtype=bool)
+
+
+        merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(
+            n_components = len(merged_gmm.means), max_iter = 30)
+        merged_gmm.gmm_generator.means_ = merged_gmm.means
+        merged_gmm.gmm_generator.weights_ = merged_gmm.weights
+        merged_gmm.gmm_generator.covariances_ = merged_gmm.covariances
+        merged_gmm.gmm_generator.precisions_ = merged_gmm.precs
+        merged_gmm.gmm_generator.precisions_cholesky_ = merged_gmm.precs_chol
+
+        #TODO remove_dublicastes?
+        return merged_gmm
 
 
 def merge_gmms(gmmA, maskA, gmmB, maskB):
@@ -310,20 +330,19 @@ def merge_gmms(gmmA, maskA, gmmB, maskB):
     merged_gmm.means = np.concatenate([gmmA.means[maskA], gmmB.means[maskB]], axis = 0)
     merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0)
     merged_gmm.covariances = np.concatenate([gmmA.covariances[maskA], gmmB.covariances[maskB]], axis = 0)
-    '''
 
+    '''
     merged_gmm.precs = np.concatenate([gmmA.precs[maskA], gmmB.precs[maskB]], axis = 0)
     merged_gmm.precs_chol = np.concatenate([gmmA.precs_chol[maskA], gmmB.precs_chol[maskB]], axis = 0)
     merged_gmm.measured = np.concatenate([gmmA.measured[maskA], gmmB.measured[maskB]], axis = 0)
 
 
     merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
-    merged_gmm.gmm_generator.means_ = gmmA.means
-    merged_gmm.gmm_generator.weights_ = gmmA.weights
-    merged_gmm.gmm_generator.covariances_ = gmmA.covariances
-    merged_gmm.gmm_generator.precisions_ = gmmA.precs
-    merged_gmm.gmm_generator.precisions_cholesky_ = gmmA.precs_chol
-
+    merged_gmm.gmm_generator.means_ = merged_gmm.means
+    merged_gmm.gmm_generator.weights_ = merged_gmm.weights
+    merged_gmm.gmm_generator.covariances_ = merged_gmm.covariances
+    merged_gmm.gmm_generator.precisions_ = merged_gmm.precs
+    merged_gmm.gmm_generator.precisions_cholesky_ = merged_gmm.precs_chol
     '''
 
     #TODO remove_dublicastes

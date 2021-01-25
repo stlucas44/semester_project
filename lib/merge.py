@@ -10,6 +10,8 @@ from lib import gmm_generation, visualization
 import open3d as o3d
 import trimesh
 
+from lib import gmm_generation
+
 from numba import jit, cuda
 
 def view_point_crop(mesh, pos, rpy,
@@ -208,8 +210,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     score = np.zeros((len(prior_range),len(measurement_range)))
 
     for i in prior_range:
-        if( i % 10 == 0):
-            print("intersection computing: ", i, " of ", len(prior_range))
+        if( i % 20 == 0):
+            print("  intersection computing: ", i, " of ", len(prior_range))
         mean = prior_gmm.means[i]
         cov = prior_gmm.covariances[i]
 
@@ -257,12 +259,14 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
         ax[0].imshow(match, cmap=cmap, norm=norm)
         ax[0].set_xlabel('measurement gmms (item numbers)')
         ax[0].set_ylabel('mesh gmms (item numbers)')
+        ax[0].set_title('accepted t tests')
 
         intensity_cm = plt.get_cmap("autumn")
-        print("scaling the colormap to ", np.max(score))
-        ax[1].imshow(score, cmap=intensity_cm, vmin=0, vmax=np.max(score))
+        print(" scaling the colormap to ", np.max(score))
+        ax[1].imshow(score, cmap=intensity_cm, vmin=0, vmax=0.1)
         ax[1].set_xlabel('measurement gmms (item numbers)')
         ax[1].set_ylabel('mesh gmms (item numbers)')
+        ax[1].set_title("intersection probability heat map")
         plt.show()
 
     #TODO(stlucas): create new gmms with these mappings from match
@@ -285,8 +289,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
         merged_gmm = gmm_generation.merge_gmms(measurement_gmm, local_measurement_mask,
                                                prior_gmm, local_prior_mask)
         merged_mixtures.append(merged_gmm)
-        mixture_tuple = (gmm_generation.extract_gmm(measurement_gmm, local_measurement_mask),
-                                gmm_generation.extract_gmm(prior_gmm, local_prior_mask))
+        mixture_tuple = (measurement_gmm.extract_gmm(local_measurement_mask),
+                         prior_gmm.extract_gmm(local_prior_mask))
         matched_mixtures.append(mixture_tuple)
         iterator = iterator + 1
 
@@ -296,17 +300,16 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
         prior_mask[local_prior_mask] = result
 
     final_mixture = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
-                                           prior_gmm, prior_mask)
-
-    final_mixture_tuple = (gmm_generation.extract_gmm(measurement_gmm, measurement_mask),
-                           gmm_generation.extract_gmm(prior_gmm, prior_mask))
+                                              prior_gmm, prior_mask)
+    final_mixture_tuple = (measurement_gmm.extract_gmm(measurement_mask),
+                           prior_gmm.extract_gmm(prior_mask))
 
     # find all measurement_gmms that overlap with prior_gmms
     #what do we do with multioverlap
     #remove undetected mesh representations
 
     # TODO(stlucas): introduce mask of which mixtures are already taken
-
+    resampled_mixture = merge_mixtures(final_mixture_tuple)
     return matched_mixtures, final_mixture, final_mixture_tuple
 
 def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
@@ -403,10 +406,23 @@ def cost(gmm, alpha, beta):
 
     return cost
 
-def stitch_pc():
+def merge_mixtures(gmm_tuple):
     # implement something nice!
-    pass
+    print(" starting final resampling")
+    weights = [0.5, 0.5]
+    n = int(1e3)
 
+    pc = o3d.geometry.PointCloud()
+    for (gmm, weights) in zip(gmm_tuple, weights):
+        local_pc = gmm.sample_from_gmm(n)
+        pc.points = local_pc.points
+
+    print(" starting final cluster")
+    merged_gmm = gmm_generation.Gmm()
+    merged_gmm.pc_simple_gmm(pc)
+    #merged_gmm.pc_hgmm(pc)
+
+    return merged_gmm
 
 def analyze_result(pointcloud, gmm, point_groups):
     print("Gmm weight sum", np.sum(gmm.weights))
