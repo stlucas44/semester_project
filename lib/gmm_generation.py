@@ -483,14 +483,14 @@ def the_return_ong(tris, centroids, areas, mesh_std):
         z = np.cross(sc, ab)
         z = z / np.linalg.norm(z)
         y = np.cross(x, z)
+        y = y / np.linalg.norm(y)
 
         transform = np.asarray([x, y, z]).T
 
         ab_l = np.matmul(transform.T, ab).round(6)
         sc_l = np.matmul(transform.T, sc).round(6)
 
-        def p_steiner(AB, SC, t):
-            return np.multiply(np.cos(t),SC)  + np.multiply (1/np.sqrt(3) * np.sin(t), AB)
+
 
         f1 = sc_l
         f2 = 1.0/np.sqrt(3) * ab_l
@@ -503,7 +503,7 @@ def the_return_ong(tris, centroids, areas, mesh_std):
         ha_0 = p_steiner(ab_l, sc_l, t_0)
         ha_1 = p_steiner(ab_l, sc_l, t_0 + (0.5 * np.pi))
 
-        visualize_half_axis(transform, tris, ab_l, sc_l)
+        visualize_half_axis(transform, tris, ab_l, sc_l, i, centroids, t_0, ha_0, ha_1)
 
         local_area = np.pi * np.linalg.norm(ha_0) * np.linalg.norm(ha_1)
 
@@ -529,31 +529,32 @@ def the_return_ong(tris, centroids, areas, mesh_std):
     #return 0.02 * areas[i] / local_area * cov #np.sqrt(cov) # bv
     return cov
 
-def visualize_half_axis(transform, tris, ab_l, sc_l):
-        '''
-        a = np.matmul(transform.T, tris[i,0, :]).round(6)
-        b = np.matmul(transform.T, tris[i,1, :]).round(6)
-        c = np.matmul(transform.T, tris[i,2, :]).round(6)
-        s = np.matmul(transform.T, centroids[i]).round(6)
+def p_steiner(AB, SC, t):
+    return np.multiply(np.cos(t),SC)  + np.multiply (1/np.sqrt(3) * np.sin(t), AB)
 
-        #print(" a, b, c: ", a, b, c)
-        #print(" Local vectors:" , ab_l, sc_l)
+def visualize_half_axis(transform, tris, ab_l, sc_l, i, centroids, t_0, ha_0, ha_1):
+    a = np.matmul(transform.T, tris[i,0, :]).round(6)
+    b = np.matmul(transform.T, tris[i,1, :]).round(6)
+    c = np.matmul(transform.T, tris[i,2, :]).round(6)
+    s = np.matmul(transform.T, centroids[i]).round(6)
 
-        ha_2 = p_steiner(ab_l, sc_l, t_0 + (np.pi))
-        ha_3 = p_steiner(ab_l, sc_l, t_0 - (0.5 * np.pi))
-        ha = [ha_0, ha_1, ha_2, ha_3]
+    #print(" a, b, c: ", a, b, c)
+    #print(" Local vectors:" , ab_l, sc_l)
 
-        print("colinearity:", np.cross(ha_0 ,ha_1))
-        plt.plot(a[0], a[1], "g.")
-        plt.plot(b[0], b[1], "g.")
-        plt.plot(c[0], c[1], "g.")
-        plt.plot(s[0], s[1], "r.")
+    ha_2 = p_steiner(ab_l, sc_l, t_0 + (np.pi))
+    ha_3 = p_steiner(ab_l, sc_l, t_0 - (0.5 * np.pi))
+    ha = [ha_0, ha_1, ha_2, ha_3]
 
-        for axis in ha:
-            plt.plot([0.0, axis[0]], [0.0, axis[1]])
-        plt.axis('equal')
-        plt.show()
-        '''
+    print("colinearity:", np.cross(ha_0 ,ha_1))
+    plt.plot(a[0]-s[0], a[1]-s[0], "g.")
+    plt.plot(b[0]-s[0], b[1]-s[0], "g.")
+    plt.plot(c[0]-s[0], c[1]-s[0], "g.")
+    plt.plot(s[0]-s[0], s[1]-s[0], "r.")
+
+    for axis in ha:
+        plt.plot([0.0, axis[0]], [0.0, axis[1]])
+    plt.axis('equal')
+    plt.show()
 
 #from: https://stackoverflow.com/questions/10939213/how-can-i-calculate-the-nearest-positive-semi-definite-matrix
 

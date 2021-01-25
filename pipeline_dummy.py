@@ -86,13 +86,13 @@ def main():
 
     # perform refinement
     #merged_pc = merge.simple_pc_gmm_merge(prior_pc, measurement_gmm)
-    merged_gmm_lists, final_gmm, final_gmm_tuple = merge.gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.05, sample_size = 5)
+    merged_gmm_lists, final_gmm, final_gmm_pair = merge.gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.05, sample_size = 5)
 
     #mpl_visualize(final_gmm)
-    mpl_visualize(*final_gmm_tuple, colors = ["g", "r"],
+    mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
                   cov_scale = 2.0, show_mean = False,
                   view_angle = view_point_angle, show_z = False)
-    #mpl_visualize(*final_gmm_tuple, colors = ["g", "r"])
+    #mpl_visualize(*final_gmm_pair, colors = ["g", "r"])
 
 
     for gmm_pair in merged_gmm_lists:

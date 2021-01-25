@@ -29,4 +29,4 @@ def scale_o3d_object(object, scale, scaling_center = np.zeros((3,1))):
     return object.scale(scale, scaling_center)
 
 def sample_points(mesh, n_points = 10000):
-    return mesh.sample_points_uniformly(n_points)
+    return mesh.sample_points_uniformly(int(n_points))

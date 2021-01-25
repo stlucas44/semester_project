@@ -12,7 +12,11 @@ import trimesh
 
 from numba import jit, cuda
 
-def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.0, 180.0], angular_resolution = 1.0):
+def view_point_crop(mesh, pos, rpy,
+                    sensor_max_range = 100.0,
+                    sensor_fov = [180.0, 180.0],
+                    angular_resolution = 1.0,
+                    get_pc = False):
     # cut all occluded triangles
     '''
     Cut all occluded triangles
@@ -249,10 +253,16 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
         bounds = [0,0.5,1.0]
         norm = mplcolors.BoundaryNorm(bounds, cmap.N)
 
-        fig, ax = plt.subplots()
-        ax.imshow(match, cmap=cmap, norm=norm)
-        ax.set_xlabel('measurement gmms (item numbers)')
-        ax.set_ylabel('mesh gmms (item numbers)')
+        fig, ax = plt.subplots(1,2)
+        ax[0].imshow(match, cmap=cmap, norm=norm)
+        ax[0].set_xlabel('measurement gmms (item numbers)')
+        ax[0].set_ylabel('mesh gmms (item numbers)')
+
+        intensity_cm = plt.get_cmap("autumn")
+        print("scaling the colormap to ", np.max(score))
+        ax[1].imshow(score, cmap=intensity_cm, vmin=0, vmax=np.max(score))
+        ax[1].set_xlabel('measurement gmms (item numbers)')
+        ax[1].set_ylabel('mesh gmms (item numbers)')
         plt.show()
 
     #TODO(stlucas): create new gmms with these mappings from match
