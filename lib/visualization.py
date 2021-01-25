@@ -62,6 +62,7 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
 
     if path is not None:
         plt.savefig(path)
+
     plt.show()
 
 def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
@@ -124,61 +125,32 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
         # parametric representation
         # source: https://en.wikipedia.org/wiki/Ellipsoid#:~:text=An%20ellipsoid%20has%20three%20pairwise,simply%20axes%20of%20the%20ellipsoid.
 
-        fancy = 0
-        if fancy ==1:
-            ellipse_resolution = 20
-            phi = np.asarray([np.linspace(0.0,2.0 * np.pi,ellipse_resolution)])
-            theta = np.asarray([np.linspace(-0.5 * np.pi, 0.5 * np.pi,int(ellipse_resolution/2))])
+        rx, ry, rz = cov_scale*np.sqrt(s)#s#1/np.sqrt(coefs)
 
-            # build range for parameters
-            coscos = np.cos(theta.T) * np.cos(phi)
-            cossin = np.cos(theta.T) * np.sin(phi)
-            sin = np.sin(theta.T) * np.ones(shape = phi.shape)
+        R_reg = vt.T @ np.diag([1,1,np.linalg.det(vt.T @ u.T)]) @ u.T
 
-            target_vector = np.reshape([coscos[:], cossin[:], sin[:]],
-                                       (3, len(phi.T) * len(theta.T)))
+        #print(eigs)
+        # Set of all spherical angles:
+        u = np.linspace(0, 2 * np.pi, 10)
+        v = np.linspace(0, np.pi/2.0, 10)
 
-            local_mean_rep = np.dot(np.diag(local_mean), np.ones(shape=(3,len(phi.T)*len(theta.T))))
+        # Cartesian coordinates that correspond to the spherical angles:
+        # (this is the equation of an ellipsoid):
+        x = rx * np.outer(np.cos(u), np.sin(v)) #+ mean[0]
+        y = ry * np.outer(np.sin(u), np.sin(v)) #+ mean[1]
+        z = rz * np.outer(np.ones_like(u), np.cos(v)) #+ mean[2]
 
-            cov_edited = np.dot(eigenvecs, np.diag(np.sqrt(eigenvals)))
-            points = np.dot(np.diag([cov_scale, cov_scale, cov_scale]),
-                     np.dot(cov_edited, target_vector)) + local_mean_rep
-            points_centered = np.dot(np.diag([cov_scale, cov_scale, cov_scale]),
-                     np.dot(cov_edited, target_vector))
-
-            #create convex hull with qHull
-            hull = scipy.spatial.ConvexHull(points_centered.T)
-
-            ax.plot_trisurf(points[0,:],points[1,:], points[2,:],
-                            triangles = hull.vertices,
-                            linewidth=0.2, antialiased=False, color= colors[i])
-
+        for i in range(len(x)):
+            for j in range(len(x)):
+                x[i,j],y[i,j],z[i,j] = np.dot([x[i,j],y[i,j],z[i,j]], vt) \
+                                       + local_mean
+        # Plot:
+        if color is not None:
+            res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0,
+                                  color = color)
         else:
-            rx, ry, rz = cov_scale*np.sqrt(s)#s#1/np.sqrt(coefs)
-
-            R_reg = vt.T @ np.diag([1,1,np.linalg.det(vt.T @ u.T)]) @ u.T
-
-            #print(eigs)
-            # Set of all spherical angles:
-            u = np.linspace(0, 2 * np.pi, 10)
-            v = np.linspace(0, np.pi, 10)
-
-            # Cartesian coordinates that correspond to the spherical angles:
-            # (this is the equation of an ellipsoid):
-            x = rx * np.outer(np.cos(u), np.sin(v)) #+ mean[0]
-            y = ry * np.outer(np.sin(u), np.sin(v)) #+ mean[1]
-            z = rz * np.outer(np.ones_like(u), np.cos(v)) #+ mean[2]
-
-            for i in range(len(x)):
-                for j in range(len(x)):
-                    x[i,j],y[i,j],z[i,j] = np.dot([x[i,j],y[i,j],z[i,j]], vt) \
-                                           + local_mean
-            # Plot:
-            if color is not None:
-                res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0,
-                                      color = color)
-            else:
-                res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0)
+            res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0)
+            
         if show:
             plt.show()
 

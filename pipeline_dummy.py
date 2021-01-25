@@ -2,12 +2,13 @@ import copy
 import open3d as o3d
 from os.path import expanduser
 
-from lib.gmm_generation import Gmm
-#from lib.registration import o3d_point_to_point_icp, transform_measurement
+from lib import evaluation
 from lib import registration
+from lib import merge
+
+from lib.gmm_generation import Gmm
 from lib.loader import *
 from lib.visualization import *
-from lib import merge
 
 import trimesh
 
@@ -58,7 +59,8 @@ def main():
 
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
-    prior_mesh = load_mesh(bunny_mesh_file)
+    #prior_mesh = load_mesh(bunny_mesh_file)
+    prior_mesh = load_unit_mesh()
     view_point_mesh, occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
                                    sensor_rpy, sensor_max_range = range,
                                    sensor_fov = sensor_fov,
@@ -67,13 +69,17 @@ def main():
     # fit via direct gmm
     prior_gmm = Gmm()
     #prior_gmm.mesh_gmm(view_point_mesh, n = 300, recompute = False, path = tmp_gmm_mesh)
-    prior_gmm.naive_mesh_gmm(view_point_mesh, mesh_std = 0.1)
-    mpl_visualize(prior_gmm, cov_scale = cov_scale, colors = ['r'])
+    prior_gmm.naive_mesh_gmm(view_point_mesh, mesh_std = 0.05)
+
+    view_point_mesh.compute_triangle_normals()
+    view_point_mesh.compute_vertex_normals()
+    mpl_visualize(view_point_mesh, prior_gmm, cov_scale = cov_scale , colors = ['r', 'g'])
+    #return
 
     ##### register and merge
     # compute registration
         # possibilities: icp, gmm_reg, etc.
-    prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation and registration
+    prior_pc = evaluation.sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation and registration
     transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
 
     #transform pc to the right spot
@@ -99,7 +105,7 @@ def main():
 
     # evaluate mesh
     #ref_mesh = copy.deepcopy(prior_mesh)
-    #error_mesh = eval_quality(ref_mesh, prior_mesh)
+    #error_mesh = evaluation.eval_quality(ref_mesh, prior_mesh)
 
     ##### visualize
     #presentation_plots:
@@ -128,38 +134,6 @@ def presentation_plots(measurement_pc, prior_mesh, measurement_gmm, prior_gmm):
                   path="imgs/measurement_gmm.png", show_z = False)
     mpl_visualize(prior_gmm, cov_scale = 2.0, show_mean = False, view_angle = view_point_angle,
                   path="imgs/prior_gmm.png", show_z = False)
-
-
-def sample_points(mesh, n_points = 10000):
-    return mesh.sample_points_uniformly(n_points)
-
-def eval_quality(true_mesh, meas_mesh, num_points = 500):
-    #pseudo shift
-    vertices = np.asarray(meas_mesh.vertices)
-    #vertices[:,1] = vertices[:,1] + 0.5
-
-    faces = np.asarray(meas_mesh.triangles)
-
-    eval_mesh = trimesh.Trimesh(vertices=vertices.tolist(),
-                                faces = faces.tolist())
-    true_pc = sample_points(true_mesh, num_points)
-    (closest_points, distances, triangle_id) = \
-        eval_mesh.nearest.on_surface(true_pc.points)
-
-    #print("Eval results:\n", closest_points, distances, triangle_id)
-    #print("Eval results:\n", type(distances))
-    print("Eval results:\n", np.sort(distances)[:5])
-    #print(np.mean(distances))
-
-    #create new pc
-    error_pc = o3d.geometry.PointCloud()
-    sampled_points = np.asarray(true_pc.points)
-
-    print(np.shape(sampled_points))
-    sampled_points[:,2] = distances
-    error_pc.points = o3d.utility.Vector3dVector(sampled_points)
-
-    return error_pc
 
 if __name__ == "__main__":
     main()

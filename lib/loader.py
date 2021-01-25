@@ -9,6 +9,21 @@ def load_mesh(path, scale = 1.0):
     mesh = o3d.io.read_triangle_mesh(path)
     return scale_o3d_object(mesh, scale)
 
+def load_unit_mesh(type = 'flat'):
+    if type == 'flat':
+        mesh = o3d.geometry.TriangleMesh()
+
+        vertices = np.asarray([[0.0, 0.0, 0.0],
+                                          [1.0, 0.0, 0.0],
+                                          [0.0, 1.0, 0.0]])
+        mesh.vertices = o3d.utility.Vector3dVector(vertices)
+
+        triangles = [[0.0,1.0,2.0]]
+        mesh.triangles = o3d.utility.Vector3iVector(triangles)
+
+    return mesh
+
+
 def scale_o3d_object(object, scale, scaling_center = np.zeros((3,1))):
     scaling_center = np.zeros((3,1))
     return object.scale(scale, scaling_center)

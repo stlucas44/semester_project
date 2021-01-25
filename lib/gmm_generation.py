@@ -503,8 +503,33 @@ def the_return_ong(tris, centroids, areas, mesh_std):
         ha_0 = p_steiner(ab_l, sc_l, t_0)
         ha_1 = p_steiner(ab_l, sc_l, t_0 + (0.5 * np.pi))
 
+        visualize_half_axis(transform, tris, ab_l, sc_l)
+
         local_area = np.pi * np.linalg.norm(ha_0) * np.linalg.norm(ha_1)
 
+        first_axis = np.square(np.linalg.norm(ha_0)/2.0)* ha_0
+        second_axis = np.square(np.linalg.norm(ha_1)/2.0) * ha_1
+
+        third_axis = np.square(mesh_std/2.0) * z
+        # TODO: check squaring the length
+        local_cov = np.asarray([first_axis, second_axis, third_axis]).T
+        cov[i] = np.matmul(transform, local_cov)
+
+        '''
+        U, S, V = np.linalg.svd(local_cov)
+        print("Eigs of local cov: ", S)
+
+        U, S, V = np.linalg.svd(cov[i])
+        print("Eigs of global cov: ", S)
+
+        print("area ratio: ellipse, triangle: ", local_area / areas[i])
+        area ratio is usually 2.418
+        '''
+
+    #return 0.02 * areas[i] / local_area * cov #np.sqrt(cov) # bv
+    return cov
+
+def visualize_half_axis(transform, tris, ab_l, sc_l):
         '''
         a = np.matmul(transform.T, tris[i,0, :]).round(6)
         b = np.matmul(transform.T, tris[i,1, :]).round(6)
@@ -529,25 +554,6 @@ def the_return_ong(tris, centroids, areas, mesh_std):
         plt.axis('equal')
         plt.show()
         '''
-
-        third_axis = np.square(mesh_std) * z
-
-        local_cov = np.asarray([ha_0, ha_1, third_axis]).T
-        cov[i] = np.matmul(transform, local_cov)
-
-        '''
-        U, S, V = np.linalg.svd(local_cov)
-        print("Eigs of local cov: ", S)
-
-        U, S, V = np.linalg.svd(cov[i])
-        print("Eigs of global cov: ", S)
-
-        print("area ratio: ellipse, triangle: ", local_area / areas[i])
-        area ratio is usually 2.418
-        '''
-
-    return 0.02 * areas[i] / local_area * cov #np.sqrt(cov) # bv
-
 
 #from: https://stackoverflow.com/questions/10939213/how-can-i-calculate-the-nearest-positive-semi-definite-matrix
 
