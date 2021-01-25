@@ -23,10 +23,6 @@ cube_file = "test_cube.ply"
 tmp_gmm_measurement = data_folder + "/tmp/tmp_measurement_gmm"
 tmp_gmm_mesh = data_folder + "/tmp/tmp_mesh_gmm"
 
-#path of local libs
-directGMM_folder = home + "/semester_project/direct_gmm/mixture"
-hgmm_folder = home + "/semester_project/ \
-                      GPU-Accelerated-Point-Cloud-Registration-Using-Hierarchical-GMM"
 # visualization
 cov_scale = 2.0 #95% quantile!
 view_point_angle =  (80.0, -60.0)
@@ -36,6 +32,7 @@ num_gaussians_prior = 100
 num_gaussians_measurement = 100
 n_prior = 1.0# weights
 n_measurement = 1.0
+
 def main():
     ##### process measurement
     # load measurement and (disrupt measurement)
@@ -73,13 +70,13 @@ def main():
 
     view_point_mesh.compute_triangle_normals()
     view_point_mesh.compute_vertex_normals()
-    mpl_visualize(view_point_mesh, prior_gmm, cov_scale = cov_scale , colors = ['r', 'g'])
+    mpl_visualize(prior_gmm, view_point_mesh, cov_scale = cov_scale , colors = ['r', 'g'])
     #return
 
     ##### register and merge
     # compute registration
         # possibilities: icp, gmm_reg, etc.
-    prior_pc = evaluation.sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation and registration
+    prior_pc = sample_points(prior_mesh, n_points = 10000) # for final mesh evaluation and registration
     transform = registration.o3d_point_to_point_icp(measurement_pc, prior_pc)
 
     #transform pc to the right spot

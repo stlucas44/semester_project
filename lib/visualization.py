@@ -6,6 +6,8 @@ import scipy
 
 from lib.gmm_generation import Gmm
 
+# TODO: implement plt.draw() <-> show
+
 def o3d_visualize(*obj):
     #option: mesh_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
     obj = [element.compute_vertex_normals() for element in obj]
@@ -150,7 +152,7 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
                                   color = color)
         else:
             res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0)
-            
+
         if show:
             plt.show()
 

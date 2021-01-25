@@ -67,7 +67,8 @@ def view_point_crop(mesh, pos, rpy, sensor_max_range = 100.0, sensor_fov = [180.
     #create mask from intersected triangles
     triangle_range = np.arange(len(mesh.triangles))
     mask = [element not in triangle_index for element in triangle_range]
-    print("number of hit triangles: ", len(triangle_index))
+    print("number of hit triangles: ", len(triangle_index),
+          " of ", len(triangle_range))
 
     anti_mask = [not element for element in mask]
     #remove the nonvisible parts of the mesh
