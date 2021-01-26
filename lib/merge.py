@@ -5,12 +5,11 @@ import scipy
 from scipy.stats import multivariate_normal
 
 import matplotlib.pyplot as plt
-from matplotlib import colors as mplcolors
 from lib import gmm_generation, visualization
 import open3d as o3d
 import trimesh
 
-from lib import gmm_generation
+from lib import gmm_generation, visualization
 
 from numba import jit, cuda
 
@@ -239,59 +238,14 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
 
         #print("mask created")
 
-    vert_sums = np.sum(match, axis = 0)
-    hor_sums = np.sum(match, axis = 1)
-
-    plot_sums = False
+    plot_sums = True
     if plot_sums:
-        # create discrete colormap
-        cmap = mplcolors.ListedColormap(['red', 'green'])
-        bounds = [0,0.5,1.0]
-        norm = mplcolors.BoundaryNorm(bounds, cmap.N)
+        visualization.visualize_match_matrix(match, score)
 
-        fig, ax = plt.subplots(1,2)
-        ax[0].imshow(match, cmap=cmap, norm=norm)
-        ax[0].set_xlabel('measurement gmms (item numbers)')
-        ax[0].set_ylabel('mesh gmms (item numbers)')
-        ax[0].set_title('accepted t tests')
+    prior_mask, measurement_mask, matched_mixture_tuples = create_masks_simple(
+        match, prior_gmm, measurement_gmm)
 
-        intensity_cm = plt.get_cmap("autumn")
-        print(" scaling the colormap to ", np.max(score))
-        ax[1].imshow(score, cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
-        ax[1].set_xlabel('measurement gmms (item numbers)')
-        ax[1].set_ylabel('mesh gmms (item numbers)')
-        ax[1].set_title("intersection probability heat map")
-        plt.show()
-
-    #TODO(stlucas): create new gmms with these mappings from match
-    merged_mixtures = list()
-    matched_mixtures = list()
-    iterator = 0
-
-    # find all prior gmms that overlap with measurements
-    prior_mask = np.ones(hor_sums.shape, dtype=bool)
-    measurement_mask = np.ones(vert_sums.shape, dtype=bool)
-
-    for score in hor_sums:
-        if score == 0:
-            prior_mask[iterator] = False
-            iterator = iterator + 1
-            continue
-        local_prior_mask = np.zeros(hor_sums.shape, dtype = bool)
-        local_prior_mask[iterator] = True
-        local_measurement_mask = np.asarray([match[iterator,:] > 0]).reshape(-1,)
-        merged_gmm = gmm_generation.merge_gmms(measurement_gmm, local_measurement_mask,
-                                               prior_gmm, local_prior_mask)
-        merged_mixtures.append(merged_gmm)
-        mixture_tuple = (measurement_gmm.extract_gmm(local_measurement_mask),
-                         prior_gmm.extract_gmm(local_prior_mask))
-        matched_mixtures.append(mixture_tuple)
-        iterator = iterator + 1
-
-        #fill final merge mask:
-        result = decide_on_mixtures(*mixture_tuple, rule='mesh_first') # returs 0 for first
-        measurement_mask[local_measurement_mask] = not result # for now we set the current matches to zero
-        prior_mask[local_prior_mask] = result
+    prior_mask, measurement_mask = create_masks(match, score)
 
     final_mixture = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
                                               prior_gmm, prior_mask)
@@ -303,9 +257,18 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     #what do we do with multioverlap
     #remove undetected mesh representations
 
-    # TODO(stlucas): introduce mask of which mixtures are already taken
     resampled_mixture = merge_mixtures(final_mixture_tuple)
-    return matched_mixtures, final_mixture, final_mixture_tuple
+    measurement_only_mixture = measurement_gmm.extract_gmm(np.invert(measurement_mask))
+
+
+    # create new (all true) masks and merge
+    resampled_mixture_mask = np.ones((len(resampled_mixture.means),), dtype=bool)
+    measurement_only_mixture_mask = np.ones((len(measurement_only_mixture.means),), dtype=bool)
+    final_mixture =gmm_generation.merge_gmms(
+            resampled_mixture, resampled_mixture_mask,
+            measurement_only_mixture, measurement_only_mixture_mask)
+
+    return matched_mixture_tuples, final_mixture, final_mixture_tuple
 
 def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
     appearence_likelihood = multivariate_normal.pdf(points, mean = mean, cov = cov)
@@ -400,6 +363,53 @@ def cost(gmm, alpha, beta):
     print("cost: ", cost)
 
     return cost
+
+
+def create_masks_simple(match, prior_gmm, measurement_gmm):
+    #TODO(stlucas): create new gmms with these mappings from match
+    vert_sums = np.sum(match, axis = 0) #column sum
+    hor_sums = np.sum(match, axis = 1) # row sum
+
+    merged_mixtures = list()
+    matched_mixture_tuples = list()
+
+    # find all prior gmms that overlap with measurements
+    prior_mask = np.ones((len(prior_gmm.means),), dtype=bool)
+    measurement_mask = np.ones((len(measurement_gmm.means),), dtype=bool)
+
+    iterator = 0
+    for score in hor_sums:
+        if score == 0:
+            prior_mask[iterator] = False
+            iterator = iterator + 1
+            continue
+        local_prior_mask = np.zeros(hor_sums.shape, dtype = bool)
+        local_prior_mask[iterator] = True
+        local_measurement_mask = np.asarray([match[iterator,:] > 0]).reshape(-1,)
+        merged_gmm = gmm_generation.merge_gmms(measurement_gmm, local_measurement_mask,
+                                               prior_gmm, local_prior_mask)
+        merged_mixtures.append(merged_gmm)
+        mixture_tuple = (measurement_gmm.extract_gmm(local_measurement_mask),
+                         prior_gmm.extract_gmm(local_prior_mask))
+        matched_mixture_tuples.append(mixture_tuple)
+        iterator = iterator + 1
+
+        #fill final merge mask:
+        result = decide_on_mixtures(*mixture_tuple, rule='mesh_first') # returs 0 for first
+        measurement_mask[local_measurement_mask] = not result # for now we set the current matches to zero
+        prior_mask[local_prior_mask] = result
+
+    return prior_mask, measurement_mask, matched_mixture_tuples
+
+def create_masks(match, score):
+    column_sums = np.sum(match, axis = 0) #column sum
+    row_sums = np.sum(match, axis = 1) # row sum
+
+    measurement_mask = column_sums != 0
+    prior_mask = row_sums != 0
+    print("new masks: ", prior_mask, measurement_mask)
+
+    return prior_mask, measurement_mask
 
 def merge_mixtures(gmm_tuple):
     # implement something nice!

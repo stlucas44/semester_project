@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from matplotlib import colors as mplcolors
+
 from mpl_toolkits.mplot3d import Axes3D as ax
 import numpy as np
 import open3d as o3d
@@ -69,7 +71,7 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
     if path is not None:
         plt.savefig(path)
 
-    plt.draw()
+    plt.show()
 
 def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
     if ax is None:
@@ -167,4 +169,24 @@ def visualize_gmm_weights(gmm):
     gmm_count = np.size(gmm.weights)
     #print(gmm.weights)
     plt.bar(np.arange(0,gmm_count), gmm.weights)
+    plt.show()
+
+def visualize_match_matrix(match, score):
+    # create discrete colormap
+    cmap = mplcolors.ListedColormap(['red', 'green'])
+    bounds = [0,0.5,1.0]
+    norm = mplcolors.BoundaryNorm(bounds, cmap.N)
+
+    fig, ax = plt.subplots(1,2)
+    ax[0].imshow(match, cmap=cmap, norm=norm)
+    ax[0].set_xlabel('measurement gmms (item numbers)')
+    ax[0].set_ylabel('mesh gmms (item numbers)')
+    ax[0].set_title('accepted t tests')
+
+    intensity_cm = plt.get_cmap("autumn")
+    print(" scaling the colormap to ", np.max(score))
+    ax[1].imshow(score, cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
+    ax[1].set_xlabel('measurement gmms (item numbers)')
+    ax[1].set_ylabel('mesh gmms (item numbers)')
+    ax[1].set_title("intersection heat map, p_max = " + str(np.max(score)))
     plt.show()

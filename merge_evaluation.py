@@ -48,7 +48,7 @@ if speed == 2:
 
 
 #precomputed gmms:
-recompute_items = False
+recompute_items = True
 tmp_gmm_true = data_folder + "/tmp/tmp_measurement_gmm"
 tmp_gmm_true_pc = data_folder + "/tmp/tmp_measurement_gmm_pc"
 tmp_gmm_prior = data_folder + "/tmp/tmp_mesh_gmm"
@@ -81,7 +81,6 @@ def main():
     true_gmm = Gmm()
     true_gmm.mesh_gmm(true_mesh_vp, n = len(true_mesh.triangles), recompute = recompute_items, path = tmp_gmm_true)
     #true_gmm.naive_mesh_gmm(true_mesh_vp, mesh_std = 0.05)
-
 
     measurement_gmm = Gmm()
     measurement_gmm.pc_hgmm(measurement_pc, recompute = True, path = tmp_gmm_true_pc)
@@ -122,7 +121,7 @@ def main():
     merged_gmm_lists, final_gmm, final_gmm_pair = merge.gmm_merge(
             prior_gmm,
             measurement_gmm,
-            p_crit = 0.05,
+            p_crit = 0.01,
             sample_size = 5)
 
     mpl_visualize(final_gmm, title="final gmm")
@@ -140,6 +139,8 @@ def main():
     '''
     #### compute scores
     # score the corrupted gmm with sampled mesh
+    print('Starting scoring'.center(80,'*'))
+
     score_true = evaluation.eval_quality(true_gmm, true_pc)
     score_prior = evaluation.eval_quality(prior_gmm, true_pc)
     score_merged = evaluation.eval_quality(final_gmm, true_pc)

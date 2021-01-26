@@ -47,6 +47,8 @@ class Gmm:
             self.means = self.gmm_generator.means_
             self.weights = self.gmm_generator.weights_
             self.covariances = self.gmm_generator.covariances_
+            self.precs = self.gmm_generator.precisions_
+            self.precs_chol = self.gmm_generator.precisions_cholesky_
             if path is not None:
                 pickle_out = open(path,"wb")
                 pickle.dump(self.__dict__, pickle_out)
