@@ -62,11 +62,11 @@ def view_point_crop(mesh, pos, rpy,
     rays = r.apply(rays)
 
     #check intersected triangles and remove dublicates
-    print("starting ray trace")
+    print(" starting ray trace")
     triangle_index = raytracer.intersects_first(ray_centers, rays)
     triangle_index = np.delete(triangle_index, np.where(triangle_index == -1))
     if triangle_index.size == 0:
-        print("rays do not intersect! mesh outside sensor range")
+        print(" rays do not intersect! mesh outside sensor range")
         return mesh
     triangle_index = np.unique(triangle_index)
 
@@ -242,14 +242,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     vert_sums = np.sum(match, axis = 0)
     hor_sums = np.sum(match, axis = 1)
 
-    plot_sums = True
+    plot_sums = False
     if plot_sums:
-        '''
-        plt.plot(vert_sums, label = "mesh sums")
-        plt.plot(hor_sums, label = "measurement sums")
-        plt.legend()
-        plt.show()
-        '''
         # create discrete colormap
         cmap = mplcolors.ListedColormap(['red', 'green'])
         bounds = [0,0.5,1.0]
@@ -263,7 +257,7 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
 
         intensity_cm = plt.get_cmap("autumn")
         print(" scaling the colormap to ", np.max(score))
-        ax[1].imshow(score, cmap=intensity_cm, vmin=0, vmax=0.1)
+        ax[1].imshow(score, cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
         ax[1].set_xlabel('measurement gmms (item numbers)')
         ax[1].set_ylabel('mesh gmms (item numbers)')
         ax[1].set_title("intersection probability heat map")
@@ -301,6 +295,7 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
 
     final_mixture = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
                                               prior_gmm, prior_mask)
+    print(measurement_mask, prior_mask)
     final_mixture_tuple = (measurement_gmm.extract_gmm(measurement_mask),
                            prior_gmm.extract_gmm(prior_mask))
 
@@ -408,16 +403,25 @@ def cost(gmm, alpha, beta):
 
 def merge_mixtures(gmm_tuple):
     # implement something nice!
-    print(" starting final resampling")
     weights = [0.5, 0.5]
     n = int(1e3)
+    point_collection = list()
 
     pc = o3d.geometry.PointCloud()
     for (gmm, weights) in zip(gmm_tuple, weights):
-        local_pc = gmm.sample_from_gmm(n)
-        pc.points = local_pc.points
+        if gmm.num_gaussians == 0:
+            print("no mixtures, continue!")
+            continue
 
-    print(" starting final cluster")
+        local_pc = gmm.sample_from_gmm(n)
+        print(np.asarray(local_pc.points))
+        point_collection.append(np.asarray(local_pc.points))
+        #print("point_collection shape: ", point_collection.shape)
+
+    point_collection = np.asarray(point_collection).reshape(-1,3)
+    print("point_collection shape: ", point_collection.shape)
+    pc.points = o3d.utility.Vector3dVector(point_collection)
+
     merged_gmm = gmm_generation.Gmm()
     merged_gmm.pc_simple_gmm(pc)
     #merged_gmm.pc_hgmm(pc)

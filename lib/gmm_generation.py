@@ -295,6 +295,7 @@ class Gmm:
         self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
         return_pc = o3d.geometry.PointCloud()
         return_pc.points = o3d.utility.Vector3dVector(self.samples)
+
         return return_pc
 
 
@@ -330,23 +331,19 @@ def merge_gmms(gmmA, maskA, gmmB, maskB):
     merged_gmm.means = np.concatenate([gmmA.means[maskA], gmmB.means[maskB]], axis = 0)
     merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0)
     merged_gmm.covariances = np.concatenate([gmmA.covariances[maskA], gmmB.covariances[maskB]], axis = 0)
-
-    '''
     merged_gmm.precs = np.concatenate([gmmA.precs[maskA], gmmB.precs[maskB]], axis = 0)
     merged_gmm.precs_chol = np.concatenate([gmmA.precs_chol[maskA], gmmB.precs_chol[maskB]], axis = 0)
-    merged_gmm.measured = np.concatenate([gmmA.measured[maskA], gmmB.measured[maskB]], axis = 0)
+    #merged_gmm.measured = np.concatenate([gmmA.measured[maskA], gmmB.measured[maskB]], axis = 0)
 
 
-    merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+    merged_gmm.gmm_generator = sklearn.mixture.GaussianMixture(n_components = merged_gmm.num_gaussians, max_iter = 30)
     merged_gmm.gmm_generator.means_ = merged_gmm.means
     merged_gmm.gmm_generator.weights_ = merged_gmm.weights
     merged_gmm.gmm_generator.covariances_ = merged_gmm.covariances
     merged_gmm.gmm_generator.precisions_ = merged_gmm.precs
     merged_gmm.gmm_generator.precisions_cholesky_ = merged_gmm.precs_chol
-    '''
 
-    #TODO remove_dublicastes
-
+    #TODO check for dublicates
     return merged_gmm
 
 

@@ -17,7 +17,8 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
                   view_angle = None,
                   show_mean = True,
                   path = None,
-                  show_z = True):
+                  show_z = True,
+                  title = None):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
 
@@ -61,6 +62,9 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
 
     if view_angle is not None:
         ax.view_init(*view_angle)
+
+    if title is not None:
+        ax.set_title(title)
 
     if path is not None:
         plt.savefig(path)

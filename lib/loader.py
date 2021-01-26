@@ -35,9 +35,9 @@ def load_unit_mesh(type = 'flat'):
         vertices = np.asarray([[1.0, 0.0, 0.0],
                                [-1.0, 0.0, 0.0],
                                [0.0, 1.0, 0.0],
-                               [0.0, -1.0, 0.0]])
+                               [1.0, 1.0, 0.0]])
         triangles = [[0.0, 1.0, 2.0],
-                     [0.0, 1.0, 3.0]]
+                     [0.0, 2.0, 3.0]]
 
 
     mesh.vertices = o3d.utility.Vector3dVector(vertices)
