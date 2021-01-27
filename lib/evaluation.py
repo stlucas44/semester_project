@@ -34,6 +34,9 @@ def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
     return error_pc
 
 def eval_quality(gmm, pc_true):
-    #member, proba = gmm.predict_proba(np.asarray(pc_true.points))
+    proba = gmm.gmm_generator.predict_proba(np.asarray(pc_true.points))
+    max_proba = proba.max(axis = 1)
+    print(max_proba.shape)
+
     score = gmm.gmm_generator.score((np.asarray(pc_true.points)))
     return score

@@ -9,8 +9,6 @@ from lib import gmm_generation, visualization
 import open3d as o3d
 import trimesh
 
-from lib import gmm_generation, visualization
-
 from numba import jit, cuda
 
 def view_point_crop(mesh, pos, rpy,
@@ -254,12 +252,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
                            prior_gmm.extract_gmm(prior_mask))
 
     # find all measurement_gmms that overlap with prior_gmms
-    #what do we do with multioverlap
-    #remove undetected mesh representations
-
-    resampled_mixture = merge_mixtures(final_mixture_tuple)
+    resampled_mixture = resample_mixture(final_mixture_tuple)
     measurement_only_mixture = measurement_gmm.extract_gmm(np.invert(measurement_mask))
-
 
     # create new (all true) masks and merge
     resampled_mixture_mask = np.ones((len(resampled_mixture.means),), dtype=bool)
@@ -407,14 +401,13 @@ def create_masks(match, score):
 
     measurement_mask = column_sums != 0
     prior_mask = row_sums != 0
-    print("new masks: ", prior_mask, measurement_mask)
 
     return prior_mask, measurement_mask
 
-def merge_mixtures(gmm_tuple):
+def resample_mixture(gmm_tuple):
     # implement something nice!
     weights = [0.5, 0.5]
-    n = int(1e3)
+    n = int(1e5)
     point_collection = list()
 
     pc = o3d.geometry.PointCloud()
@@ -424,7 +417,6 @@ def merge_mixtures(gmm_tuple):
             continue
 
         local_pc = gmm.sample_from_gmm(n)
-        print(np.asarray(local_pc.points))
         point_collection.append(np.asarray(local_pc.points))
         #print("point_collection shape: ", point_collection.shape)
 
@@ -432,11 +424,13 @@ def merge_mixtures(gmm_tuple):
     print("point_collection shape: ", point_collection.shape)
     pc.points = o3d.utility.Vector3dVector(point_collection)
 
-    merged_gmm = gmm_generation.Gmm()
-    merged_gmm.pc_simple_gmm(pc)
-    #merged_gmm.pc_hgmm(pc)
+    resampled_gmm = gmm_generation.Gmm(weights = [], means = [], covariances = [])
+    #NOTE: when not initialzing to zero -> somehow there are means around!
 
-    return merged_gmm
+    #resampled_gmm.pc_simple_gmm(pc)
+    resampled_gmm.pc_hgmm(pc)
+
+    return resampled_gmm
 
 def analyze_result(pointcloud, gmm, point_groups):
     print("Gmm weight sum", np.sum(gmm.weights))

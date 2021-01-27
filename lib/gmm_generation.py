@@ -148,8 +148,7 @@ class Gmm:
                 curr_list = copy.deepcopy(next_list)
                 next_list = []
 
-            print("  finished hgmm fit")
-            print("  resulted in : ", len(self.means), " mixtures")
+            print("  finished hgmm, resulted in : ", len(self.means), " mixtures")
             self.num_gaussians = len(self.means)
             self.means = np.asarray(self.means)
             self.weights = np.asarray(self.weights)
@@ -304,9 +303,11 @@ class Gmm:
     def extract_gmm(self, maskA):
         merged_gmm = Gmm()
 
+        weights_sum = self.weights[maskA].sum()
+
         merged_gmm.num_gaussians = len(self.means[maskA])
         merged_gmm.means = np.asarray(self.means[maskA])
-        merged_gmm.weights = np.asarray(self.weights[maskA]) # crashing here!
+        merged_gmm.weights = np.asarray(self.weights[maskA]) / weights_sum # crashing here!
         merged_gmm.covariances = np.asarray(self.covariances[maskA])
 
         merged_gmm.precs = np.asarray(self.precs[maskA])
@@ -329,9 +330,13 @@ class Gmm:
 def merge_gmms(gmmA, maskA, gmmB, maskB):
     merged_gmm = Gmm()
 
+    weightsA = gmmA.weights[maskA].sum()
+    weightsB = gmmB.weights[maskB].sum()
+    weights_sum = weightsA + weightsB
+
     merged_gmm.num_gaussians = len(gmmA.means[maskA]) + len(gmmB.means[maskB])
     merged_gmm.means = np.concatenate([gmmA.means[maskA], gmmB.means[maskB]], axis = 0)
-    merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0)
+    merged_gmm.weights = np.concatenate([gmmA.weights[maskA], gmmB.weights[maskB]], axis = 0) / weights_sum
     merged_gmm.covariances = np.concatenate([gmmA.covariances[maskA], gmmB.covariances[maskB]], axis = 0)
     merged_gmm.precs = np.concatenate([gmmA.precs[maskA], gmmB.precs[maskB]], axis = 0)
     merged_gmm.precs_chol = np.concatenate([gmmA.precs_chol[maskA], gmmB.precs_chol[maskB]], axis = 0)

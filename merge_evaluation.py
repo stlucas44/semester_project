@@ -25,8 +25,8 @@ if speed == 0:
     pc_sensor_fov = [100, 85]
     pc_range = 6.0
     pc_angular_resolution = 0.3 # pico (354x287) would be 3.5 (res/fov)
-    n_pc_true = 1e8
-    n_pc_measurement = 1e6
+    n_pc_true = 1e6
+    n_pc_measurement = 1e5
 
 if speed == 1:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
@@ -34,8 +34,8 @@ if speed == 1:
     pc_sensor_fov = [100, 85]
     pc_range = 6.0
     pc_angular_resolution = 3 # pico (354x287) would be 3.5 (res/fov)
-    n_pc_true = 1e6
-    n_pc_measurement = 1e4
+    n_pc_true = 1e4
+    n_pc_measurement = 1e3
 
 if speed == 2:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
@@ -62,8 +62,8 @@ def main():
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
     # load true mesh
-    #true_mesh = load_mesh(bunny_mesh_file)
-    true_mesh = load_unit_mesh(type = '2trisA')
+    true_mesh = load_mesh(bunny_mesh_file)
+    #true_mesh = load_unit_mesh(type = '2trisA')
 
     # reduce to view point
     true_mesh_vp, true_mesh_occ = merge.view_point_crop(true_mesh,
@@ -83,7 +83,7 @@ def main():
     #true_gmm.naive_mesh_gmm(true_mesh_vp, mesh_std = 0.05)
 
     measurement_gmm = Gmm()
-    measurement_gmm.pc_hgmm(measurement_pc, recompute = True, path = tmp_gmm_true_pc)
+    measurement_gmm.pc_hgmm(measurement_pc, recompute = recompute_items, path = tmp_gmm_true_pc)
     #measurement_gmm.pc_simple_gmm(measurement_pc, path = tmp_gmm_true_pc, recompute = True)
 
 
@@ -92,8 +92,8 @@ def main():
 
     # load corrupted mesh
     #prior_mesh = load_mesh(bunny_mesh_file)
-    #prior_mesh = load_mesh(bunny_mesh_file_corrupted)
-    prior_mesh = load_unit_mesh(type = '2trisB')
+    prior_mesh = load_mesh(bunny_mesh_file_corrupted)
+    #prior_mesh = load_unit_mesh(type = '2trisB')
 
     # view point crop
     prior_mesh_vp, prior_mesh_occ = merge.view_point_crop(prior_mesh,
@@ -105,14 +105,13 @@ def main():
 
     # generate gmm from prior
     prior_gmm = Gmm()
-    prior_gmm.mesh_gmm(prior_mesh_vp, n = len(prior_mesh_vp.triangles), recompute = True, path = tmp_gmm_prior)
+    prior_gmm.mesh_gmm(prior_mesh_vp, n = len(prior_mesh_vp.triangles), recompute = recompute_items, path = tmp_gmm_prior)
     #prior_gmm.naive_mesh_gmm(prior_mesh_vp, mesh_std = 0.05)
 
 
     #first plots:
-    mpl_visualize(measurement_gmm, prior_gmm, colors = ["g", "r"], title="final gmm")
-    mpl_visualize(measurement_pc, prior_mesh, colors = ["g", "r"], title="final gmm")
-
+    #mpl_visualize(prior_mesh_vp, prior_gmm, colors = ["g", "r"], title="prior gmm/mesh", cov_scale = 2.0)
+    #mpl_visualize(measurement_pc, prior_mesh, colors = ["g", "r"], title="prior mesh")
 
     #### merge mesh with corrupted point cloud
     # apply merge with
@@ -124,12 +123,11 @@ def main():
             p_crit = 0.01,
             sample_size = 5)
 
-    mpl_visualize(final_gmm, title="final gmm")
+    mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
     mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
                   cov_scale = 2.0, show_mean = False,
                   view_angle = view_point_angle, show_z = False,
                   title = "final pair")
-    plt.show()
     '''
     #mpl_visualize(*final_gmm_pair, colors = ["g", "r"])
     for gmm_pair in merged_gmm_lists:
