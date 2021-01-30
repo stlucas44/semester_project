@@ -510,33 +510,50 @@ def the_return_ong(tris, centroids, areas, mesh_std):
 
         transform = np.asarray([x, y, z]).T
 
-        ab_l = np.matmul(transform.T, ab).round(6)
-        sc_l = np.matmul(transform.T, sc).round(6)
+        ab_l = np.matmul(transform.T, ab).round(9)
+        sc_l = np.matmul(transform.T, sc).round(9)
 
-
+        ab_retransf = np.matmul(transform, ab_l)
+        sc_retransf = np.matmul(transform, sc_l)
 
         f1 = sc_l
         f2 = 1.0/np.sqrt(3) * ab_l
 
-        cot_2t = np.divide((np.square(f1).sum() - np.square(f2).sum()),
-                 (2.0 * np.multiply(f1, f2).sum()))
-        t_0 = np.arctan2(1, cot_2t) / 2
+        upper = (np.square(f1).sum() - np.square(f2).sum())
+        lower =  (2.0 * np.multiply(f1, f2).sum())
+        cot_2t_inv = np.divide(lower, upper)
+        t_0 = np.arctan2(cot_2t_inv, 1) / 2
 
         #computing the half axis
-        ha_0 = p_steiner(ab_l, sc_l, t_0)
-        ha_1 = p_steiner(ab_l, sc_l, t_0 + (0.5 * np.pi))
+        ha_0 = p_steiner(ab_l, sc_l, t_0).round(9)
+        ha_1 = p_steiner(ab_l, sc_l, t_0 + (0.5 * np.pi)).round(9)
 
-        visualize_half_axis(transform, tris, ab_l, sc_l, i, centroids, t_0, ha_0, ha_1)
+        #visualize_half_axis(transform, tris, ab_l, sc_l, i, centroids, t_0, ha_0, ha_1)
 
         local_area = np.pi * np.linalg.norm(ha_0) * np.linalg.norm(ha_1)
 
-        first_axis = np.square(np.linalg.norm(ha_0)/2.0)* ha_0
-        second_axis = np.square(np.linalg.norm(ha_1)/2.0) * ha_1
+        #print("scaling factor", np.square(np.linalg.norm(ha_0)/2.0))
+        scale_0 = np.square(np.linalg.norm(ha_0)/2.0).reshape((-1,))
+        scale_1 = np.square(np.linalg.norm(ha_1)/2.0).reshape((-1,))
 
-        third_axis = np.square(mesh_std/2.0) * z
-        # TODO: check squaring the length
-        local_cov = np.asarray([first_axis, second_axis, third_axis]).T
-        cov[i] = np.matmul(transform, local_cov)
+        first_axis = np.multiply(ha_0, scale_0)
+        first_axis_scale = np.linalg.norm(first_axis)
+        first_axis_unit = first_axis / first_axis_scale
+
+        second_axis = np.multiply(ha_1, scale_1)
+        second_axis_scale = np.linalg.norm(first_axis)
+        second_axis_unit = second_axis / second_axis_scale
+
+        third_axis_unit = np.cross(first_axis, second_axis)
+        third_axis_unit = third_axis_unit / np.linalg.norm(third_axis_unit)
+        third_axis_scale = np.square(mesh_std/2.0)
+
+        eigen_vals = np.diag([first_axis_scale, second_axis_scale, third_axis_scale])
+
+        eigen_vecs = np.asarray([first_axis_unit, second_axis_unit, third_axis_unit]).T
+        eigen_vecs = np.matmul(transform, eigen_vecs)
+
+        cov[i,:,:] = np.linalg.multi_dot([eigen_vecs,eigen_vals,eigen_vecs.T])
 
         '''
         U, S, V = np.linalg.svd(local_cov)
@@ -548,8 +565,6 @@ def the_return_ong(tris, centroids, areas, mesh_std):
         print("area ratio: ellipse, triangle: ", local_area / areas[i])
         area ratio is usually 2.418
         '''
-
-    #return 0.02 * areas[i] / local_area * cov #np.sqrt(cov) # bv
     return cov
 
 def p_steiner(AB, SC, t):
@@ -569,10 +584,10 @@ def visualize_half_axis(transform, tris, ab_l, sc_l, i, centroids, t_0, ha_0, ha
     ha = [ha_0, ha_1, ha_2, ha_3]
 
     print("colinearity:", np.cross(ha_0 ,ha_1))
-    plt.plot(a[0]-s[0], a[1]-s[0], "g.")
-    plt.plot(b[0]-s[0], b[1]-s[0], "g.")
-    plt.plot(c[0]-s[0], c[1]-s[0], "g.")
-    plt.plot(s[0]-s[0], s[1]-s[0], "r.")
+    plt.plot(a[0]-s[0], a[1]-s[1], "g.")
+    plt.plot(b[0]-s[0], b[1]-s[1], "g.")
+    plt.plot(c[0]-s[0], c[1]-s[1], "g.")
+    plt.plot(s[0]-s[0], s[1]-s[1], "r.")
 
     for axis in ha:
         plt.plot([0.0, axis[0]], [0.0, axis[1]])
