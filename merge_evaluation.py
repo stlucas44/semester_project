@@ -145,6 +145,13 @@ def main():
     # score the corrupted gmm with sampled mesh
     print('Starting scoring'.center(80,'*'))
 
+    score_true = evaluation.eval_quality_maha(true_gmm, true_pc)
+    score_prior = evaluation.eval_quality_maha(prior_gmm, true_pc)
+    score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
+
+    print("Scores: true, prior, updated", score_true, score_prior, score_merged)
+
+
     score_true = evaluation.eval_quality(true_gmm, true_pc)
     score_prior = evaluation.eval_quality(prior_gmm, true_pc)
     score_merged = evaluation.eval_quality(final_gmm, true_pc)

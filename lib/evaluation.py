@@ -6,6 +6,22 @@ from lib import loader
 import matplotlib.pyplot as plt
 
 
+def boundary_likelihood(sigma_range = 2.0):
+    mean = np.asarray([0.0 ,0.0, 0.0])
+    cov = np.asarray([[1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,1.0]])
+
+    interesting_points = np.asarray([1.0, 0.0, 0.0], [2.0, 0.0, 0.0])
+
+    likelihoods = multivariate_normal.pdf(interesting_points,mean, mean)
+    print(likelihoods)
+
+    return likelihoods
+
+def maha_dist(x, mean, prec):
+    delta = (x - mean).reshape(3,1)
+
+    prod = np.linalg.multi_dot([delta.T, prec, delta])
+    return np.sqrt(prod)
 
 def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
     #pseudo shift
@@ -35,7 +51,7 @@ def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
 
     return error_pc
 
-def eval_quality(gmm, pc_true):
+def eval_quality_proba(gmm, pc_true):
     proba = gmm.gmm_generator.predict_proba(np.asarray(pc_true.points))
     print("probabilities shape: ", proba.shape)
     sum_proba = np.sum(proba, axis = 1)
@@ -54,11 +70,23 @@ def eval_quality(gmm, pc_true):
     score = gmm.gmm_generator.score((np.asarray(pc_true.points)))
     return score
 
+def eval_quality_maha(gmm, pc_true):
+    points = np.asarray(pc_true.points)
+    predictions = gmm.gmm_generator.predict(points)
+    maha_list = np.zeros(predictions.shape)
 
-def eval_quality0(gmm, pc_true):
-    proba = gmm.gmm_generator.predict_proba(np.asarray(pc_true.points))
-    max_proba = proba.max(axis = 1)
-    print(max_proba.shape)
+    means = gmm.means
+    precs = gmm.precs
 
+    iterator = 0
+    for (point, prediction, maha) in zip(points, predictions, maha_list):
+        maha_list[iterator] = maha_dist(point, means[prediction], precs[prediction])
+        iterator = iterator + 1
+    print(maha_list[1:100])
+    score = float(sum(maha_list < 2.0)) / len(maha_list)
+    return score
+
+
+def eval_quality_score(gmm, pc_true):
     score = gmm.gmm_generator.score((np.asarray(pc_true.points)))
     return score

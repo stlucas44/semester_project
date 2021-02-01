@@ -240,14 +240,16 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     if plot_sums:
         visualization.visualize_match_matrix(match, score)
 
-    prior_mask, measurement_mask, matched_mixture_tuples = create_masks_simple(
+    prior_mask_vis, measurement_mask_vis, matched_mixture_tuples = create_masks_simple(
         match, prior_gmm, measurement_gmm)
 
     prior_mask, measurement_mask = create_masks(match, score)
 
-    final_mixture = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
-                                              prior_gmm, prior_mask)
     #print(measurement_mask, prior_mask)
+
+    final_mixture_tuple_vis = (measurement_gmm.extract_gmm(measurement_mask_vis),
+                           prior_gmm.extract_gmm(prior_mask_vis))
+
     final_mixture_tuple = (measurement_gmm.extract_gmm(measurement_mask),
                            prior_gmm.extract_gmm(prior_mask))
 
@@ -258,11 +260,12 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     # create new (all true) masks and merge
     resampled_mixture_mask = np.ones((len(resampled_mixture.means),), dtype=bool)
     measurement_only_mixture_mask = np.ones((len(measurement_only_mixture.means),), dtype=bool)
+
     final_mixture =gmm_generation.merge_gmms(
             resampled_mixture, resampled_mixture_mask,
             measurement_only_mixture, measurement_only_mixture_mask)
 
-    return matched_mixture_tuples, final_mixture, final_mixture_tuple
+    return matched_mixture_tuples, final_mixture, final_mixture_tuple_vis
 
 def get_intersection_type_simple(points, mean, cov, min_likelihood = 0.1):
     appearence_likelihood = multivariate_normal.pdf(points, mean = mean, cov = cov)
