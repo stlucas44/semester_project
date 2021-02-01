@@ -14,7 +14,7 @@ def load_unit_mesh(type = 'flat'):
 
     if type == 'flat':
         vertices = np.asarray([[0.0, 0.0, 0.0],
-                               [1.0, 0.0, 0.0],
+                               [10.0, 0.0, 0.0],
                                [0.0, 1.0, 0.0]])
         triangles = [[0.0,1.0,2.0]]
 

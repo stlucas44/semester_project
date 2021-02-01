@@ -56,8 +56,8 @@ def main():
 
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
-    #prior_mesh = load_mesh(bunny_mesh_file)
-    prior_mesh = load_unit_mesh(type = "3d")
+    prior_mesh = load_mesh(bunny_mesh_file)
+    #prior_mesh = load_unit_mesh(type = "flat")
     view_point_mesh, occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
                                    sensor_rpy, sensor_max_range = range,
                                    sensor_fov = sensor_fov,
@@ -70,7 +70,9 @@ def main():
 
     view_point_mesh.compute_triangle_normals()
     view_point_mesh.compute_vertex_normals()
-    mpl_visualize(prior_gmm, view_point_mesh , colors = ['r', 'g'])
+    mpl_visualize(prior_gmm , cov_scale = 2.0, colors = ['r', 'g'])
+    mpl_visualize(prior_gmm, view_point_mesh , cov_scale = 2.0, colors = ['r', 'g'])
+
     #return
 
     ##### register and merge
