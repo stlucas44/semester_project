@@ -9,17 +9,21 @@ from lib.visualization import *
 from lib import merge
 
 def main():
-    # steps for evaluation
-    # generate two or more gmms with only few gaussians
-    run1()
+    ### Visualizing scores in 1D
 
-    # now we run this with different scales of n?
+    # 1D gaussian range with corresponding scores
+    #run1()
+
+    # 1D gaussian range with different covariance scales
     #run2()
 
-    # try different sample_sizes
-    run3()
-    # try different ratios
+    # try different test sample sizes
+    #run3()
+    # try different test size ratios
     #run4()
+
+    # try it in 3d
+    run5()
 
     pass
 
@@ -104,6 +108,45 @@ def run4(): # vary sample sizes (keeping covs as in run 2)
     plt.legend()
     plt.show()
 
+
+def run5(): # vary means in 3d space
+    #visualize overlaying distribution and
+    prior_means = np.asarray([0.0, 0.0, 0.0]).reshape(-1,3)
+    prior_cov = np.diag([1.0, 0.5, 0.1]).reshape((1,3,3))
+    print(prior_means.shape)
+    prior = Gmm(means = prior_means, covariances = prior_cov)
+    prior.num_gaussians = 1
+
+    mean_x = np.arange(0, 10, 1)#.reshape((-1,1))
+    m_means = np.zeros((len(mean_x),3))
+    m_means[:,0] = mean_x
+
+    m_covs = np.asarray([np.identity(3) for i in range(len(mean_x))])
+    m_covs[:] = prior_cov
+
+    print(m_covs[1])
+    print(m_covs.shape)
+
+
+    measurement = Gmm(means = m_means, covariances = m_covs)
+    measurement.num_gaussians = len(m_means)
+
+    p_crit = 0.1
+    sample_size = 2
+    result, p_value = merge.gmm_merge(prior, measurement,
+                                      p_crit = p_crit,
+                                      sample_size = sample_size,
+                                      exit_early = True)
+
+    print(p_value)
+    #vis_update(prior, measurement, p_value)
+    vis_update_3d(prior, measurement, p_value, p_crit = p_crit)
+    #plt.plot([0, len(p_value)], [p_crit, p_crit], 'r')
+    #vis_update(prior, measurement, [not elem for elem in result],
+    #           path="imgs/1dMerge.png")
+    plt.legend()
+    plt.show()
+
 def present_merge(): # vary sample sizes (keeping covs as in run 2)
     prior = Gmm(means = [0.0, 5.0], covariances = [5.0, 1.0])
     prior.num_gaussians = 1
@@ -165,6 +208,10 @@ def vis_result(means, results, ax, colors = None):
         color = np.random.rand(3,len(means))
 
     ax.scatter(means, results, c = colors)
+
+def vis_update_3d(prior, measurement, p_value, p_crit = 0.01):
+    mpl_visualize(prior, measurement, cov_scale = 2.0)
+    plt.scatter(measurement.means[:,0], p_value)
 
 if __name__ == "__main__":
     main()

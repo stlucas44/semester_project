@@ -163,7 +163,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
 
 #@jit(target ="cuda")
 def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
-              sample_ratio = 1.0, exit_early = False):
+              sample_ratio = 1.0, exit_early = False, n_resample = 1e5):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -247,7 +247,7 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
 
     final_mixture = gmm_generation.merge_gmms(measurement_gmm, measurement_mask,
                                               prior_gmm, prior_mask)
-    print(measurement_mask, prior_mask)
+    #print(measurement_mask, prior_mask)
     final_mixture_tuple = (measurement_gmm.extract_gmm(measurement_mask),
                            prior_gmm.extract_gmm(prior_mask))
 
@@ -404,10 +404,9 @@ def create_masks(match, score):
 
     return prior_mask, measurement_mask
 
-def resample_mixture(gmm_tuple):
+def resample_mixture(gmm_tuple, n = int(1e5)):
     # implement something nice!
     weights = [0.5, 0.5]
-    n = int(1e5)
     point_collection = list()
 
     pc = o3d.geometry.PointCloud()
@@ -418,10 +417,9 @@ def resample_mixture(gmm_tuple):
 
         local_pc = gmm.sample_from_gmm(n)
         point_collection.append(np.asarray(local_pc.points))
-        #print("point_collection shape: ", point_collection.shape)
 
     point_collection = np.asarray(point_collection).reshape(-1,3)
-    print("point_collection shape: ", point_collection.shape)
+    #print("  point_collection shape: ", point_collection.shape)
     pc.points = o3d.utility.Vector3dVector(point_collection)
 
     resampled_gmm = gmm_generation.Gmm(weights = [], means = [], covariances = [])

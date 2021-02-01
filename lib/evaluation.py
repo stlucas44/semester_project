@@ -3,6 +3,8 @@ import open3d as o3d
 import trimesh
 
 from lib import loader
+import matplotlib.pyplot as plt
+
 
 
 def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
@@ -34,6 +36,26 @@ def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
     return error_pc
 
 def eval_quality(gmm, pc_true):
+    proba = gmm.gmm_generator.predict_proba(np.asarray(pc_true.points))
+    print("probabilities shape: ", proba.shape)
+    sum_proba = np.sum(proba, axis = 1)
+    mean_proba = np.mean(proba, axis = 1)
+
+    fig, axs = plt.subplots(1, 3, sharey=True, tight_layout=True)
+
+    axs[0].hist(proba)
+    axs[1].hist(sum_proba)
+    axs[2].hist(mean_proba)
+
+    plt.show()
+    max_proba = proba.max(axis = 1)
+    print(max_proba.shape)
+
+    score = gmm.gmm_generator.score((np.asarray(pc_true.points)))
+    return score
+
+
+def eval_quality0(gmm, pc_true):
     proba = gmm.gmm_generator.predict_proba(np.asarray(pc_true.points))
     max_proba = proba.max(axis = 1)
     print(max_proba.shape)

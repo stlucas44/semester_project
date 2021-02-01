@@ -27,6 +27,7 @@ if speed == 0:
     pc_angular_resolution = 0.3 # pico (354x287) would be 3.5 (res/fov)
     n_pc_true = 1e6
     n_pc_measurement = 1e5
+    n_resampling = int(1e5)
 
 if speed == 1:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
@@ -36,6 +37,8 @@ if speed == 1:
     pc_angular_resolution = 3 # pico (354x287) would be 3.5 (res/fov)
     n_pc_true = 1e4
     n_pc_measurement = 1e3
+    n_resampling = 1e4
+
 
 if speed == 2:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
@@ -45,6 +48,8 @@ if speed == 2:
     pc_angular_resolution = 5 # pico (354x287) would be 3.5 (res/fov)
     n_pc_true = 1e4
     n_pc_measurement = 1e3
+    n_resampling = 1e3
+
 
 
 #precomputed gmms:
@@ -120,8 +125,9 @@ def main():
     merged_gmm_lists, final_gmm, final_gmm_pair = merge.gmm_merge(
             prior_gmm,
             measurement_gmm,
-            p_crit = 0.01,
-            sample_size = 5)
+            p_crit = 0.05,
+            sample_size = 5,
+            n_resample = n_resampling)
 
     mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
     mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
