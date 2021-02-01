@@ -163,7 +163,8 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
 
 #@jit(target ="cuda")
 def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
-              sample_ratio = 1.0, exit_early = False, n_resample = 1e5):
+              sample_ratio = 1.0, exit_early = False, n_resample = 1e5,
+              plot = False):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -226,7 +227,6 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
             result[j] = local_result
             match[i,j] = local_result
             score[i,j] = p_value[j]
-        plot = False
         if plot:
             plt.plot(measurement_range, t)
             plt.show()

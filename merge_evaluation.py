@@ -16,8 +16,8 @@ data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
 bunny_mesh_file_corrupted = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
 
-speed = 1 # 0 for high sensor resolution,
-
+speed = 0 # 0 for high sensor resolution,
+plot = False
 # sensor params:
 if speed == 0:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
@@ -128,12 +128,12 @@ def main():
             p_crit = 0.05,
             sample_size = 5,
             n_resample = n_resampling)
-
-    mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
-    mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
-                  cov_scale = 2.0, show_mean = False,
-                  view_angle = view_point_angle, show_z = False,
-                  title = "final pair")
+    if plot:
+        mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
+        mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
+                      cov_scale = 2.0, show_mean = False,
+                      view_angle = view_point_angle, show_z = False,
+                      title = "final pair")
     '''
     #mpl_visualize(*final_gmm_pair, colors = ["g", "r"])
     for gmm_pair in merged_gmm_lists:

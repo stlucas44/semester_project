@@ -140,7 +140,7 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
         #print(eigs)
         # Set of all spherical angles:
         u = np.linspace(0, 2 * np.pi, 10)
-        v = np.linspace(0, np.pi/2.0, 10)
+        v = np.linspace(-np.pi/2.0, np.pi/2.0, 10)
 
         # Cartesian coordinates that correspond to the spherical angles:
         # (this is the equation of an ellipsoid):

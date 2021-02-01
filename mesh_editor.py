@@ -4,6 +4,9 @@ from os.path import expanduser
 from lib import visualization as vis
 from lib.loader import *
 
+import networkx as nx
+import trimesh
+
 '''
 Use this editor to edit, generate, scale meshes
 Cases:
@@ -15,8 +18,9 @@ Cases:
 
 edit_case = 3
 gen_cube = False
-crush_bunny = True
-scale_bunny = True
+crush_bunny = False
+scale_bunny = False
+crush_random = True
 
 model_scaling = 10
 
@@ -42,7 +46,7 @@ def main():
     if crush_bunny:
         # load bunny and scaling up
         bunny_mesh = load_mesh(bunny_mesh_file, scale = model_scaling)
-        new_bunny = corrupt_region(bunny_mesh, region_center = [-0.25, 1.0, 0.2],
+        new_bunny = corrupt_region_volumetric(bunny_mesh, region_center = [-0.25, 1.0, 0.2],
                                         offset = [0.0, 0.0, 0.3])
         vis.mpl_visualize(new_bunny)
         o3d.io.write_triangle_mesh(bunny_mesh_file_large_corr, new_bunny)
@@ -53,6 +57,12 @@ def main():
 
         bunny_pc = load_measurement(bunny_pc_file, scale = model_scaling)
         o3d.io.write_point_cloud(bunny_pc_file_large, bunny_pc)
+
+    if crush_random:
+        bunny = load_mesh(bunny_mesh_file, scale = model_scaling)
+        bunny = corrupt_region_connected(bunny, offset_range = (1.0, 1.5))
+
+        vis.mpl_visualize(bunny, alpha = 0.8)
 
     pass
 
@@ -72,7 +82,7 @@ class cubeGenerator():
         o3d.io.write_triangle_mesh(name + ".ply", self.cube)
 
 
-def corrupt_region(mesh,
+def corrupt_region_volumetric(mesh,
                  region_center = [0.0, 0.0, 0.0],
                  region = 0.3,
                  offset = [0.0, 0.0, 0.0]):
@@ -85,6 +95,51 @@ def corrupt_region(mesh,
     points[local_points_index, :] = points[local_points_index, :] + np.asarray(offset)
 
     mesh.vertices = o3d.utility.Vector3dVector(points)
+    return mesh
+
+def corrupt_region_connected(mesh, n_points = 1, offset_range = (-0.5,0.5)):
+
+    print(type(mesh))
+
+    mesh.compute_triangle_normals()
+    mesh.compute_vertex_normals()
+
+    #transform to trimesh
+    local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
+                                      faces = mesh.triangles,
+                                      face_normals = mesh.triangle_normals,
+                                      vertex_normals = mesh.vertex_normals)
+
+    points = np.asarray(mesh.vertices)
+    faces = mesh.triangles
+    #print(local_points_index[:10])
+
+    for i in np.arange(0, n_points):
+        init_index = np.random.randint(0, len(mesh.vertices))
+        print(type(init_index))
+
+        graph = local_mesh.vertex_adjacency_graph
+        nx.graphviews.generic_graph_view(graph)
+        test = graph.neighbors(init_index)
+        neighboring_index = local_mesh.vertex_neighbors(init_index)
+        print(neighboring_index, test, )
+
+        mask = np.zeros((len(points)), dtype = bool)
+        mask[neighboring_index] = True
+        mask[init_index] = True
+
+
+
+        offset_length = np.random.uniform(low = offset_range[0], high = offset_range[1])
+        print("  mesh pertubed by ", offset_length)
+        offset = np.asarray(mesh.vertex_normals)[init_index] * offset_length
+
+        points[mask, :] = points[mask, :] + np.asarray(offset)
+
+
+    mesh.vertices = o3d.utility.Vector3dVector(points)
+    mesh.compute_triangle_normals()
+    mesh.compute_vertex_normals()
     return mesh
 
 def remove_region(mesh, region_center, region):

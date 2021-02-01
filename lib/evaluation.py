@@ -82,7 +82,7 @@ def eval_quality_maha(gmm, pc_true):
     for (point, prediction, maha) in zip(points, predictions, maha_list):
         maha_list[iterator] = maha_dist(point, means[prediction], precs[prediction])
         iterator = iterator + 1
-    print(maha_list[1:100])
+    
     score = float(sum(maha_list < 2.0)) / len(maha_list)
     return score
 
