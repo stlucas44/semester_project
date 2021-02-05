@@ -89,7 +89,6 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
 
     view_point_mesh = view_point_crop(mesh, pos, rpy, sensor_max_range,
                                       sensor_fov, angular_resolution)
-    print(type(view_point_mesh))
     return view_point_mesh[0]
 
 def view_point_crop(mesh, pos, rpy,
@@ -146,13 +145,13 @@ def view_point_crop(mesh, pos, rpy,
     triangle_index = np.delete(triangle_index, np.where(triangle_index == -1))
     if triangle_index.size == 0:
         print(" rays do not intersect! mesh outside sensor range")
-        #return mesh
+        return None, None
     triangle_index = np.unique(triangle_index)
 
     #create mask from intersected triangles
     triangle_range = np.arange(len(mesh.triangles))
     mask = [element not in triangle_index for element in triangle_range]
-    print("number of hit triangles: ", len(triangle_index),
+    print("  number of hit triangles: ", len(triangle_index),
           " of ", len(triangle_range))
 
     anti_mask = [not element for element in mask]
@@ -165,11 +164,9 @@ def view_point_crop(mesh, pos, rpy,
     occluded_mesh.remove_triangles_by_mask(anti_mask)
     occluded_mesh.remove_unreferenced_vertices()
 
-    plot = True
+    plot = False
     if plot:
-        print(len(mesh.triangles))
         ax = visualization.visualize_mesh(old_mesh)
-
         step = 10
         ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
         ax.scatter((ray_centers + rays)[::step,0], (ray_centers + rays)[::step,1],

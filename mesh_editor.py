@@ -171,6 +171,9 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
     if self_intersection and check_intersection:
         print("selfintersection!!")
         return None
+    elif self_intersection:
+        print("selfintersection!!")
+
     return mesh
 
 def remove_region(mesh, region_center, region):
