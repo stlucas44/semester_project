@@ -10,6 +10,8 @@ from lib.gmm_generation import Gmm
 from lib.loader import *
 from lib.visualization import *
 
+from mesh_editor import corrupt_region_connected
+
 #files
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
@@ -21,7 +23,7 @@ plot = False
 # sensor params:
 if speed == 0:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
-    pc_sensor_rpy = [0.0, 90.0, 90.0]
+    pc_sensor_rpy = [0.0, 90.0, 90.0]  # aligned with what?
     pc_sensor_fov = [100, 85]
     pc_range = 6.0
     pc_angular_resolution = 0.3 # pico (354x287) would be 3.5 (res/fov)
@@ -71,7 +73,7 @@ def main():
     #true_mesh = load_unit_mesh(type = '2trisA')
 
     # reduce to view point
-    true_mesh_vp, true_mesh_occ = merge.view_point_crop(true_mesh,
+    true_mesh_vp, true_mesh_occ = view_point_crop(true_mesh,
            pc_sensor_position_enu,
            pc_sensor_rpy,
            sensor_max_range = pc_range,
@@ -98,10 +100,15 @@ def main():
     # load corrupted mesh
     #prior_mesh = load_mesh(bunny_mesh_file)
     prior_mesh = load_mesh(bunny_mesh_file_corrupted)
+    #prior_mesh = corrupt_region_connected(true_mesh_vp, corruption_percentage = 0.2,
+    #                             n_max = 10,
+    #                             offset_range = (0.0,0.2),
+    #                             max_batch_area = 0.15)
+
     #prior_mesh = load_unit_mesh(type = '2trisB')
 
     # view point crop
-    prior_mesh_vp, prior_mesh_occ = merge.view_point_crop(prior_mesh,
+    prior_mesh_vp, prior_mesh_occ = view_point_crop(prior_mesh,
            pc_sensor_position_enu,
            pc_sensor_rpy,
            sensor_max_range = pc_range,

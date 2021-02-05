@@ -82,10 +82,20 @@ def eval_quality_maha(gmm, pc_true):
     for (point, prediction, maha) in zip(points, predictions, maha_list):
         maha_list[iterator] = maha_dist(point, means[prediction], precs[prediction])
         iterator = iterator + 1
-    
+
     score = float(sum(maha_list < 2.0)) / len(maha_list)
     return score
 
+def eval_quality(gmm, pc_true, type = 'maha'):
+    if type == 'maha':
+        return eval_quality_maha(gmm, pc_true)
+    elif type == 'score':
+        return eval_quality_score(gmm, pc_true)
+    elif type == 'proba':
+        return eval_quality_score(gmm, pc_true)
+    else:
+        print("Unkown score!")
+        return 0.0
 
 def eval_quality_score(gmm, pc_true):
     score = gmm.gmm_generator.score((np.asarray(pc_true.points)))

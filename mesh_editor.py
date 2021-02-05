@@ -20,7 +20,8 @@ edit_case = 3
 gen_cube = False
 crush_bunny = False
 scale_bunny = False
-crush_random = True
+crush_random = False
+load_random = True
 
 model_scaling = 10
 
@@ -60,10 +61,12 @@ def main():
 
     if crush_random:
         bunny = load_mesh(bunny_mesh_file, scale = model_scaling)
-        bunny = corrupt_region_connected(bunny, corruption_percentage = 0.5, offset_range = (1.0, 1.5))
-
+        bunny = corrupt_region_connected(bunny, corruption_percentage = 0.2, offset_range = (0.1, 0.3))
         vis.mpl_visualize(bunny, alpha = 0.8)
 
+    if load_random:
+        bunny = automated_view_point_mesh(bunny_mesh_file_large, sensor_max_range = 3.0)
+        vis.mpl_visualize(bunny)
     pass
 
 class cubeGenerator():
@@ -98,11 +101,12 @@ def corrupt_region_volumetric(mesh,
     return mesh
 
 def corrupt_region_connected(mesh, corruption_percentage = 0.1,
-                             n_points = 1,
+                             n_max = 10,
                              offset_range = (-0.5,0.5),
-                             max_batch_area = 0.3):
+                             max_batch_area = 0.3,
+                             check_intersection = False,
+                             verbose = False):
 
-    print(type(mesh))
 
     mesh.compute_triangle_normals()
     mesh.compute_vertex_normals()
@@ -115,43 +119,58 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
 
     points = np.asarray(mesh.vertices)
     faces = np.asarray(mesh.triangles)
+    overall_neighboring_index = np.empty((0,))
     #print(local_points_index[:10])
-    for i in np.arange(0, n_points):
+    for i in np.arange(0, n_max):
         init_index = [np.random.randint(0, len(mesh.vertices))]
         expected_size = np.random.uniform(low = 0, high = max_batch_area)
-        print(type(init_index))
-
+        neighboring_index = None
         #get all points that are connected to this
         area = 0.0
-        while area < expected_size:
-            #neighboring_mask = [init_index in line for line in faces]
+        if verbose: print("init_index before start: ", init_index)
+        for j in np.arange(0, n_max):
             neighboring_mask = [any(elem in init_index for elem in line) for line in faces]
             neighboring_vertices = [i for i, x in enumerate(neighboring_mask) if x]
-            print(np.asarray(neighboring_vertices).shape)
+
             neighboring_index = np.asarray(faces[neighboring_mask]).reshape(-1,1)
             neighboring_index = np.unique(neighboring_index)
-            print(neighboring_index)
+            #print(neighboring_index)
             area = np.asarray(local_mesh.area_faces)[neighboring_mask].sum()
-            print("  pertubed_mesh_area: ", area)
-            init_index = neighboring_index
+            if verbose: print("  pertubed_mesh_area: ", area)
+            if area > expected_size:
+                break
+
+            init_index = np.concatenate((init_index, neighboring_index))### TODO: FIX THIS SHIT!
 
         mask = np.zeros((len(points)), dtype = bool)
         mask[neighboring_index] = True
         mask[init_index] = True
 
         offset_length = np.random.uniform(low = offset_range[0], high = offset_range[1])
-        print("  mesh pertubed by ", offset_length)
-        offset = np.asarray(mesh.vertex_normals)[init_index] * offset_length
+        offset = np.asarray(mesh.vertex_normals)[init_index[0]] * offset_length
+        #print("  mesh pertubed by ", offset_length)
+
 
         points[mask, :] = points[mask, :] + np.asarray(offset)
-        if len(neighboring_index)/len(mask) > corruption_percentage:
-            break
-        print("  corrupted vertex precentage: ", len(neighboring_index)/len(mask))
 
-    print("finished corruption")
+        overall_neighboring_index = np.concatenate((overall_neighboring_index, neighboring_index))
+        if verbose: print("  corrupted vertex precentage: ", len(overall_neighboring_index)/len(mask))
+        if len(overall_neighboring_index)/len(mask) > corruption_percentage:
+            print("exited by corruption percentage")
+            break
+
+
+    if verbose: print("finished corruption")
     mesh.vertices = o3d.utility.Vector3dVector(points)
     mesh.compute_triangle_normals()
     mesh.compute_vertex_normals()
+
+    self_intersection = mesh.is_self_intersecting()
+
+    # remove triangles?
+    if self_intersection and check_intersection:
+        print("selfintersection!!")
+        return None
     return mesh
 
 def remove_region(mesh, region_center, region):

@@ -58,7 +58,7 @@ def main():
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
     #prior_mesh = load_unit_mesh(type = "flat")
-    view_point_mesh, occluded_mesh = merge.view_point_crop(prior_mesh, sensor_position_enu,
+    view_point_mesh, occluded_mesh = view_point_crop(prior_mesh, sensor_position_enu,
                                    sensor_rpy, sensor_max_range = range,
                                    sensor_fov = sensor_fov,
                                    angular_resolution = angular_resolution)

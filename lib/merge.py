@@ -1,4 +1,3 @@
-import copy
 import numpy as np
 import sklearn.mixture
 import scipy
@@ -7,7 +6,6 @@ from scipy.stats import multivariate_normal
 import matplotlib.pyplot as plt
 from lib import gmm_generation, visualization
 import open3d as o3d
-import trimesh
 
 from numba import jit, cuda
 
