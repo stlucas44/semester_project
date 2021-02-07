@@ -77,8 +77,6 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
     pos = relative_pos + mesh_point
     (x, y, z) = pos - mesh_center
 
-    print("mesh center shape: ", mesh_center.shape)
-
     yaw = np.rad2deg(np.arctan2(-y,-x))
     pitch = np.rad2deg(np.arctan2(z, np.sqrt(x**2 + y**2)))
     roll = 0.0
@@ -164,7 +162,7 @@ def view_point_crop(mesh, pos, rpy,
     occluded_mesh.remove_triangles_by_mask(anti_mask)
     occluded_mesh.remove_unreferenced_vertices()
 
-    plot = False
+    plot = True
     if plot:
         ax = visualization.visualize_mesh(old_mesh)
         step = 10
