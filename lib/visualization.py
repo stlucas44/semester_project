@@ -193,9 +193,9 @@ def visualize_match_matrix(match, score):
 
 def draw_box_plots(data, labels, title = None):
     fig1, ax1 = plt.subplots()
-    ax1.set_title('Basic Plot')
+    ax1.set_title(title)
     means = np.ones(data.shape) * data.mean(axis = 0) # shape ((2,))
 
-    print(data.shape, labels, title = title)
+    print(data.shape, labels)
     ax1.boxplot(data, labels = labels, showfliers=False)
     plt.show()

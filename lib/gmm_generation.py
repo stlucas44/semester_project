@@ -63,7 +63,8 @@ class Gmm:
                 self.__dict__.update(tmp_dict)
 
         print("  finished gmm_fit")
-    def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None, min_points = 100):
+    def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None, min_points = 100,
+                max_mixtures = 800):
         '''
         approach:
             object members:
@@ -131,7 +132,9 @@ class Gmm:
 
                         #if (s[0]/s[2] > min_eig_ratio and
                         #   s[1]/s[2] > min_eig_ratio) or num_points < min_points:
-                        if (2 * np.sqrt(s[2]) < max_third_cov or num_points < min_points):
+                        if (2 * np.sqrt(s[2]) < max_third_cov
+                            or num_points < min_points
+                            or len(self.means) > max_mixtures):
                            #print(" sufficiently flat!")
 
                            self.means.append(mean)
@@ -201,9 +204,9 @@ class Gmm:
 
             #generate means, covs and faces
             com,a = get_centroids(mesh)
-            print("  Com ", com.shape, "      area (a) ", a.shape)
+            #print("  Com ", com.shape, "      area (a) ", a.shape)
             face_vert = get_face_verts(mesh.vertices, mesh.faces)
-            print("  Face vert: ", face_vert.shape)
+            #print("  Face vert: ", face_vert.shape)
 
             data_covar = get_tri_covar(face_vert) # what does it expect?!
 

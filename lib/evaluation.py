@@ -62,6 +62,12 @@ def eval_quality_score(gmm, pc_true):
     score = gmm.gmm_generator.score((np.asarray(pc_true.points)))
     return score
 
+def eval_quality_AIC(gmm, pc_true):
+    score = eval_quality_score(gmm, pc_true)
+    AIC = 2 * score -2 * len(gmm.means)
+    return AIC
+
+
 def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
     #pseudo shift
     vertices = np.asarray(meas_mesh.vertices)

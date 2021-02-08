@@ -31,8 +31,11 @@ def get_name(name):
     return name[start:end]
 
 
-speed = 1 # 0 for high sensor resolution,
-plot = False
+speed = 0 # 0 for high sensor resolution,
+plot_sensor = True
+plot_match = False
+plot_result = True
+
 # sensor params:
 if speed == 0:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]
@@ -78,7 +81,11 @@ view_point_angle =  (80.0, -60.0)
 
 
 
-def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
+def main(params, corruption_percentage):
+
+    path = params['path']
+    altitude_above_ground = params['aag']
+    pc_sensor_fov = params['pc_sensor_fov']
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
     # load true mesh
@@ -86,7 +93,7 @@ def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
                                   sensor_fov = pc_sensor_fov,
                                   #sensor_max_range = 100.0,
                                   angular_resolution = 1.0,
-                                  plot = plot)
+                                  plot = plot_sensor)
 
     # sample it for comparison and update
     true_pc = sample_points(true_mesh, n_points = n_pc_true) #n_pc_true)
@@ -128,13 +135,17 @@ def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
             p_crit = 0.05,
             sample_size = 5,
             n_resample = n_resampling,
-            plot = plot)
-    if plot:
+            plot = plot_match)
+    if plot_result:
         mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
         mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
                       cov_scale = 2.0, show_mean = False,
                       view_angle = view_point_angle, show_z = False,
                       title = "final pair")
+    if plot_sensor:
+        mpl_visualize(true_mesh, title = "true mesh")
+        mpl_visualize(prior_mesh, title = "prior mesh")
+
 
     #### compute scores
     # score the corrupted gmm with sampled mesh
@@ -144,19 +155,22 @@ def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
     score_prior = evaluation.eval_quality_maha(prior_gmm, true_pc)
     score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
 
-    print("Scores: true, prior, updated", score_true, score_prior, score_merged)
+    print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
 
+    aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
+    aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
+    aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
+
+    print("AIC Scores: true, prior, updated", score_true, score_prior, score_merged)
     return score_true, score_prior, score_merged
 
-    '''
-    score_true = evaluation.eval_quality(true_gmm, true_pc)
-    score_prior = evaluation.eval_quality(prior_gmm, true_pc)
-    score_merged = evaluation.eval_quality(final_gmm, true_pc)
-
-    print("Scores: true, prior, updated", score_true, score_prior, score_merged)
-    '''
-
 if __name__ == "__main__":
+
+    #settings:
+    bunny_mesh_params = {"path" : bunny_mesh_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
+                         "disuption_range" : (0.0, 0.5)}
+    curve_mesh_params = {"path" : curve_file, "aag" : (3.0,6.0), "pc_sensor_fov" : [100, 85],
+                         "disruption_range" : (0.5, 2.0)}
 
     corruption_part = [0.05, 0.1, 0.2, 0.5]
     iterations_per_scale = 5
@@ -164,16 +178,14 @@ if __name__ == "__main__":
 
     # variables: bunny: 0-5 - 1.0, curve = 5-10
     files = [bunny_mesh_file, curve_file, vicon_file]
-    altitude_above_ground = (5.0,10.0)
+    altitude_above_ground = (3.0,6.0)
     pc_sensor_fov = [100, 85]
-
-    print(get_name(curve_file))
 
     corruption_scale = 0.2
     #for corruption_scale in corruptions:
     for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
-        result = main(curve_file, corruption_scale, altitude_above_ground, pc_sensor_fov)
-        print("worked again")
+        result = main(curve_mesh_params, corruption_scale)
+        #print("worked again")
         results[iteration] = result
         gc.collect()
         #print("results: ", results)
