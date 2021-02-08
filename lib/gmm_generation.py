@@ -86,6 +86,9 @@ class Gmm:
 
         '''
         self.num_train_points = len(pc.points)
+        self.means = []
+        self.covariances = []
+        self.weights = []
 
         print("  starting hgmm_fit with num_points = ", self.num_train_points)
 
@@ -149,6 +152,7 @@ class Gmm:
                 next_list = []
 
             print("  finished hgmm, resulted in : ", len(self.means), " mixtures")
+
             self.num_gaussians = len(self.means)
             self.means = np.asarray(self.means)
             self.weights = np.asarray(self.weights)

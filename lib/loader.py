@@ -60,7 +60,8 @@ def scale_o3d_object(object, scale, scaling_center = np.zeros((3,1))):
 def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                               sensor_fov = [180.0, 180.0],
                               sensor_max_range = 100.0,
-                              angular_resolution = 1.0):
+                              angular_resolution = 1.0,
+                              plot = False):
     mesh = o3d.io.read_triangle_mesh(path)
     mesh.compute_vertex_normals()
 
@@ -86,14 +87,16 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
     sensor_max_range = 2 * view_point_dist
 
     view_point_mesh = view_point_crop(mesh, pos, rpy, sensor_max_range,
-                                      sensor_fov, angular_resolution)
+                                      sensor_fov, angular_resolution,
+                                      plot = plot)
     return view_point_mesh[0]
 
 def view_point_crop(mesh, pos, rpy,
                     sensor_max_range = 100.0,
                     sensor_fov = [180.0, 180.0],
                     angular_resolution = 1.0,
-                    get_pc = False):
+                    get_pc = False,
+                    plot = False):
     # cut all occluded triangles
     '''
     Cut all occluded triangles
@@ -162,7 +165,6 @@ def view_point_crop(mesh, pos, rpy,
     occluded_mesh.remove_triangles_by_mask(anti_mask)
     occluded_mesh.remove_unreferenced_vertices()
 
-    plot = True
     if plot:
         ax = visualization.visualize_mesh(old_mesh)
         step = 10

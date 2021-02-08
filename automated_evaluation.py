@@ -1,4 +1,5 @@
 import copy
+import gc
 import open3d as o3d
 from os.path import expanduser
 
@@ -84,7 +85,8 @@ def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
     true_mesh = automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                                   sensor_fov = pc_sensor_fov,
                                   #sensor_max_range = 100.0,
-                                  angular_resolution = 1.0)
+                                  angular_resolution = 1.0,
+                                  plot = plot)
 
     # sample it for comparison and update
     true_pc = sample_points(true_mesh, n_points = n_pc_true) #n_pc_true)
@@ -125,7 +127,8 @@ def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
             measurement_gmm,
             p_crit = 0.05,
             sample_size = 5,
-            n_resample = n_resampling)
+            n_resample = n_resampling,
+            plot = plot)
     if plot:
         mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
         mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
@@ -172,6 +175,7 @@ if __name__ == "__main__":
         result = main(curve_file, corruption_scale, altitude_above_ground, pc_sensor_fov)
         print("worked again")
         results[iteration] = result
+        gc.collect()
         #print("results: ", results)
 
     labels = ["True", "Prior", "Refined"]

@@ -218,7 +218,7 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
             result[j] = local_result
             match[i,j] = local_result
             score[i,j] = p_value[j]
-        if plot:
+        if False: #plot:
             plt.plot(measurement_range, t)
             plt.show()
         #print(p_value)
@@ -227,7 +227,7 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
 
         #print("mask created")
 
-    plot_sums = True
+    plot_sums = plot
     if plot_sums:
         visualization.visualize_match_matrix(match, score)
 
