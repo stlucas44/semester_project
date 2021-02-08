@@ -150,13 +150,6 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
     return_pc.points = o3d.utility.Vector3dVector(point_member_list)
 
     # sample points when there are too few according to gmm dist!
-
-    '''
-    print("memberships: ", pc_membership[1:10])
-    print("probabilities: ", pc_membership_prob[1:5,1:10])
-    print("pc_membership_prob:  ", (np.sum(pc_membership_prob[1,:])))
-    print("merge finished")
-    '''
     return return_pc
 
 #@jit(target ="cuda")

@@ -19,7 +19,7 @@ bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply
 bunny_mesh_file_corrupted = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
 
 speed = 0 # 0 for high sensor resolution,
-plot = False
+plot = True
 # sensor params:
 if speed == 0:
     pc_sensor_position_enu = [0.0, 1.0, 2.0]

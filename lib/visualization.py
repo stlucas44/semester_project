@@ -190,3 +190,12 @@ def visualize_match_matrix(match, score):
     ax[1].set_ylabel('mesh gmms (item numbers)')
     ax[1].set_title("intersection heat map, p_max = " + str(np.max(score)))
     plt.show()
+
+def draw_box_plots(data, labels, title = None):
+    fig1, ax1 = plt.subplots()
+    ax1.set_title('Basic Plot')
+    means = np.ones(data.shape) * data.mean(axis = 0) # shape ((2,))
+
+    print(data.shape, labels, title = title)
+    ax1.boxplot(data, labels = labels, showfliers=False)
+    plt.show()

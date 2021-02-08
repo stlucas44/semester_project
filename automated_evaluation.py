@@ -18,11 +18,19 @@ data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
 bunny_mesh_file_corrupted = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
 
+
+
 vicon_file = data_folder + "/vicon.stl"
+vicon_name = vicon_file.rfind("/")
 curve_file = data_folder + "/curve.off"
 
+def get_name(name):
+    start = name.rfind("/") + 1
+    end = name.rfind(".")
+    return name[start:end]
 
-speed = 0 # 0 for high sensor resolution,
+
+speed = 1 # 0 for high sensor resolution,
 plot = False
 # sensor params:
 if speed == 0:
@@ -99,12 +107,13 @@ def main(path, corruption_percentage, altitude_above_ground, pc_sensor_fov):
     prior_mesh = corrupt_region_connected(true_mesh, corruption_percentage = 0.2,
                                  n_max = 10,
                                  offset_range = (-0.5,0.5),
-                                 max_batch_area = 0.15,)
+                                 max_batch_area = 0.15)
 
     # generate gmm from prior
     prior_gmm = Gmm()
     #prior_gmm.mesh_gmm(prior_mesh, n = len(prior_mesh.triangles), recompute = recompute_items, path = tmp_gmm_prior)
-    prior_gmm.naive_mesh_gmm(prior_mesh_vp, mesh_std = 0.05)
+    prior_gmm.mesh_gmm(prior_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_prior)
+    #prior_gmm.naive_mesh_gmm(prior_mesh, mesh_std = 0.05)
 
 
     #### merge mesh with corrupted point cloud
@@ -151,14 +160,19 @@ if __name__ == "__main__":
     results = np.zeros((iterations_per_scale, 3))
 
     # variables: bunny: 0-5 - 1.0, curve = 5-10
+    files = [bunny_mesh_file, curve_file, vicon_file]
     altitude_above_ground = (5.0,10.0)
     pc_sensor_fov = [100, 85]
 
+    print(get_name(curve_file))
 
     corruption_scale = 0.2
     #for corruption_scale in corruptions:
     for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
         result = main(curve_file, corruption_scale, altitude_above_ground, pc_sensor_fov)
         print("worked again")
+        results[iteration] = result
+        #print("results: ", results)
 
-        print("results: ", results)
+    labels = ["True", "Prior", "Refined"]
+    draw_box_plots(results, labels, title = "Dataset: " + get_name(curve_file))
