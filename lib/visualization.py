@@ -199,3 +199,50 @@ def draw_box_plots(data, labels, title = None):
     print(data.shape, labels)
     ax1.boxplot(data, labels = labels, showfliers=False)
     plt.show()
+
+def draw_advanced_box_plots(data, labels, x_axis, title = None):
+    # source:
+
+    #data_a = [[1,2,5], [5,7,2,2,5], [7,2,5]]
+    #data_b = [[6,4,2], [1,2,5,3,2], [2,3,5,1]]
+    #data_c = [[6,4,2], [1,2,5,3,2], [2,3,5,1]]
+
+    print(data.shape)
+
+    data_a = data[:, :, 0].tolist()
+    print(data_a)
+    data_b = data[:, :, 1].tolist()
+    data_c = data[:, :, 2].tolist()
+
+    #ticks = ['A', 'B', 'C']
+    ticks = x_axis
+
+    def set_box_color(bp, color):
+        plt.setp(bp['boxes'], color=color)
+        plt.setp(bp['whiskers'], color=color)
+        plt.setp(bp['caps'], color=color)
+        plt.setp(bp['medians'], color=color)
+
+    plt.figure()
+
+    bpl = plt.boxplot(data_a, positions=np.array(range(len(data_a)))*2-0.4, sym='', widths=0.3)
+    bpm = plt.boxplot(data_b, positions=np.array(range(len(data_b)))*2, sym='', widths=0.3)
+    bpr = plt.boxplot(data_c, positions=np.array(range(len(data_c)))*2+0.4, sym='', widths=0.3)
+
+    set_box_color(bpl, '#A9A9A9')
+    set_box_color(bpm, '#D7191C') # colors are from http://colorbrewer2.org/
+    set_box_color(bpr, '#2C7BB6')
+
+
+    # draw temporary red and blue lines and use them to create a legend
+    plt.plot([], c='#A9A9A9', label='True') #labels[0]
+    plt.plot([], c='#D7191C', label='Prior') #labels[1]
+    plt.plot([], c='#2C7BB6', label='Refined') #labels[2]
+    plt.legend()
+
+    plt.xticks(range(0, len(ticks) * 2, 2), ticks)
+    plt.xlim(-2, len(ticks)*2)
+    #plt.ylim(0, 8)
+    plt.tight_layout()
+    #plt.savefig('boxcompare.png')
+    plt.show()

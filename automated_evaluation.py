@@ -43,7 +43,7 @@ if speed == 0:
     pc_sensor_fov = [100, 85]
     pc_range = 6.0
     pc_angular_resolution = 0.3 # pico (354x287) would be 3.5 (res/fov)
-    n_pc_true = 1e6
+    n_pc_true = 1e5
     n_pc_measurement = 1e5
     n_resampling = int(1e5)
 
@@ -86,6 +86,7 @@ def main(params, corruption_percentage):
     path = params['path']
     altitude_above_ground = params['aag']
     pc_sensor_fov = params['pc_sensor_fov']
+    refit_voxel_size = params['refit_voxel_size']
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
     # load true mesh
@@ -114,7 +115,7 @@ def main(params, corruption_percentage):
     print('Prior mesh'.center(80,'*'))
 
     # load corrupted mesh
-    prior_mesh = corrupt_region_connected(true_mesh, corruption_percentage = 0.2,
+    prior_mesh = corrupt_region_connected(true_mesh, corruption_percentage = corruption_percentage,
                                  n_max = 10,
                                  offset_range = (-0.5,0.5),
                                  max_batch_area = 0.15)
@@ -136,7 +137,8 @@ def main(params, corruption_percentage):
             p_crit = 0.05,
             sample_size = 5,
             n_resample = n_resampling,
-            plot = plot_match)
+            plot = plot_match,
+            refit_voxel_size = refit_voxel_size)
     if plot_result:
         mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
         mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
@@ -158,24 +160,37 @@ def main(params, corruption_percentage):
 
     print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
 
-    aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
-    aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
-    aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
+    #aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
+    #aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
+    #aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
 
-    print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
+    #print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
     return score_true, score_prior, score_merged
 
 if __name__ == "__main__":
 
+    scale1 = [[1.0, 1.0, 1.0, 1.0, 1.0],
+              [0.5, 0.6, 0.5, 0.6, 0.5],
+              [0.8, 0.8, 0.9, 0.7, 0.8]]
+
+    results = np.asarray([scale1, scale1, scale1, scale1])
+    labels = ["True", "Prior", "Refined"]
+    corruptions = [0.05, 0.1, 0.2, 0.4]
+
+    draw_advanced_box_plots(results, labels, corruptions)
+
+    #draw_advanced_box_plots(None, None)
     #settings:
     bunny_mesh_params = {"path" : bunny_mesh_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
-                         "disuption_range" : (0.0, 0.5)}
+                         "disuption_range" : (0.0, 0.5),
+                         "refit_voxel_size" : 0.}
     curve_mesh_params = {"path" : curve_file, "aag" : (3.0,6.0), "pc_sensor_fov" : [100, 85],
-                         "disruption_range" : (0.5, 2.0)}
+                         "disruption_range" : (0.5, 2.0),
+                         "refit_voxel_size": 0.2}
 
-    corruption_part = [0.05, 0.1, 0.2, 0.5]
+    corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 5
-    results = np.zeros((iterations_per_scale, 3))
+    results = np.zeros((len(corruptions), iterations_per_scale, 3))
 
     # variables: bunny: 0-5 - 1.0, curve = 5-10
     files = [bunny_mesh_file, curve_file, vicon_file]
@@ -183,12 +198,13 @@ if __name__ == "__main__":
     pc_sensor_fov = [100, 85]
 
     corruption_scale = 0.2
-    #for corruption_scale in corruptions:
-    for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
-        result = main(bunny_mesh_params, corruption_scale)
-        #print("worked again")
-        results[iteration] = result
-        gc.collect()
-        #print("results: ", results)
+    for (scale_number, corruption_scale) in zip(np.arange(0,len(corruptions)),corruptions):
+        for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
+            result = main(curve_mesh_params, corruption_scale)
+            #print("worked again")
+            results[scale_number, iteration] = result
+            gc.collect()
+            #print("results: ", results)
     labels = ["True", "Prior", "Refined"]
-    draw_box_plots(results, labels, title = "Dataset: " + get_name(curve_file))
+    draw_box_plots(results[0], labels, title = "Dataset: " + get_name(curve_file))
+    draw_advanced_box_plots(results, labels, corruptions)
