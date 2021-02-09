@@ -25,6 +25,7 @@ class Gmm:
         self.num_train_points = 0
         self.num_gaussians = 0
         self.weights = weights
+        self.areas = []
         self.means = means
         self.covariances = covariances
         self.precs = []
@@ -64,7 +65,7 @@ class Gmm:
 
         print("  finished gmm_fit")
     def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None, min_points = 100,
-                max_mixtures = 800):
+                max_mixtures = 800, verbose = False):
         '''
         approach:
             object members:
@@ -111,7 +112,7 @@ class Gmm:
             while(len(curr_list) > 0):
                 for sub_pc  in curr_list:
                     #fit local gmm
-                    local_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 30)
+                    local_generator = sklearn.mixture.GaussianMixture(n_components = n_h, max_iter = 50)
                     labels = local_generator.fit_predict(sub_pc.points)
                     #print("labels: ", labels[1:10], "   local_generator.weights_ ", local_generator.weights_)
 
@@ -129,12 +130,13 @@ class Gmm:
                         u, s, vt = np.linalg.svd(cov)
 
                         num_points = len(local_indexes)
+                        if verbose: print("Num mixtures: ", len(self.means))
 
                         #if (s[0]/s[2] > min_eig_ratio and
                         #   s[1]/s[2] > min_eig_ratio) or num_points < min_points:
-                        if (2 * np.sqrt(s[2]) < max_third_cov
-                            or num_points < min_points
-                            or len(self.means) > max_mixtures):
+                        if any([2 * np.sqrt(s[2]) < max_third_cov,
+                            num_points < min_points,
+                            len(self.means) > max_mixtures]):
                            #print(" sufficiently flat!")
 
                            self.means.append(mean)
@@ -142,6 +144,10 @@ class Gmm:
                            self.covariances.append(cov)
                            self.precs.append(local_generator.precisions_[i, :, :])
                            self.precs_chol.append(local_generator.precisions_cholesky_[i, : , :])
+                           if verbose:
+                               print(" Added, now num mixtures: ", len(self.means))
+                               print(" Num labeled points: ", num_points)
+                               print(" Num all points: ", len(labels))
 
                            #print(np.asarray(self.means).shape)
 
@@ -189,6 +195,8 @@ class Gmm:
         mesh = pymesh.meshio.form_mesh(np.asarray(init_mesh.vertices),
                                        np.asarray(init_mesh.triangles))
 
+        if n > len(init_mesh.triangles):
+            n = len(init_mesh.triangles) - 1
         # transform mesh to pymesh
         if recompute:
             init_params = 'kmeans'
@@ -297,13 +305,32 @@ class Gmm:
         print("  finished naive_mesh_fit ")
 
 
-    def sample_from_gmm(self, n_points = 1000):
-        self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
+    def sample_from_gmm(self, n_points = 1000, option = "weighted"):
         return_pc = o3d.geometry.PointCloud()
+
+        if option == "weighted":
+            self.samples, self.sample_labels = self.gmm_generator.sample(n_points)
+
+        elif option == "cov_size":
+            mask = np.ones((len(self.means,)), dtype = bool)
+            local_gmm = self.extract_gmm(mask)
+            self.areas = np.zeros(mask.shape)
+            for (iterator, cov) in zip(np.arange(0,len(self.covariances)),
+                                       self.covariances):
+                _, S, _ = np.linalg.svd(cov)
+                self.areas[iterator] = np.pi * S[0] * S[1]
+
+            local_gmm.weights = self.areas / self.areas.sum()
+            local_gmm.gmm_generator.weights = local_gmm.weights
+            local_gmm.areas = self.areas
+            #print("total area:", self.areas.sum())
+
+            self.samples, self.sample_labels = local_gmm.gmm_generator.sample(n_points)
+        else:
+            print(" unkown sampling strategy!")
+
         return_pc.points = o3d.utility.Vector3dVector(self.samples)
-
         return return_pc
-
 
     def extract_gmm(self, maskA):
         merged_gmm = Gmm()

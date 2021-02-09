@@ -65,8 +65,8 @@ def main():
 
     # fit via direct gmm
     prior_gmm = Gmm()
-    #prior_gmm.mesh_gmm(view_point_mesh, n = 300, recompute = False, path = tmp_gmm_mesh)
-    prior_gmm.naive_mesh_gmm(view_point_mesh, mesh_std = 0.05)
+    prior_gmm.mesh_gmm(view_point_mesh, n = 300, recompute = False, path = tmp_gmm_mesh)
+    #prior_gmm.naive_mesh_gmm(view_point_mesh, mesh_std = 0.05)
 
     view_point_mesh.compute_triangle_normals()
     view_point_mesh.compute_vertex_normals()

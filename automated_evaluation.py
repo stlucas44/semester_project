@@ -32,9 +32,9 @@ def get_name(name):
 
 
 speed = 0 # 0 for high sensor resolution,
-plot_sensor = True
+plot_sensor = False
 plot_match = False
-plot_result = True
+plot_result = False
 
 # sensor params:
 if speed == 0:
@@ -100,13 +100,14 @@ def main(params, corruption_percentage):
     measurement_pc = sample_points(true_mesh, n_points = n_pc_measurement)
 
     measurement_gmm = Gmm()
-    measurement_gmm.pc_hgmm(measurement_pc, recompute = recompute_items, path = tmp_gmm_true_pc)
+    measurement_gmm.pc_hgmm(measurement_pc, recompute = recompute_items, path = tmp_gmm_true_pc,
+                            min_points = 500)
     #measurement_gmm.pc_simple_gmm(measurement_pc, path = tmp_gmm_true_pc, recompute = True)
 
     # generate gmms
     true_gmm = Gmm()
-    true_gmm.mesh_gmm(true_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_true)
-    #true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
+    #true_gmm.mesh_gmm(true_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_true)
+    true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
 
 
     #### corrupted mesh
@@ -161,7 +162,7 @@ def main(params, corruption_percentage):
     aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
     aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
 
-    print("AIC Scores: true, prior, updated", score_true, score_prior, score_merged)
+    print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
     return score_true, score_prior, score_merged
 
 if __name__ == "__main__":
@@ -184,11 +185,10 @@ if __name__ == "__main__":
     corruption_scale = 0.2
     #for corruption_scale in corruptions:
     for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
-        result = main(curve_mesh_params, corruption_scale)
+        result = main(bunny_mesh_params, corruption_scale)
         #print("worked again")
         results[iteration] = result
         gc.collect()
         #print("results: ", results)
-
     labels = ["True", "Prior", "Refined"]
     draw_box_plots(results, labels, title = "Dataset: " + get_name(curve_file))

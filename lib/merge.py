@@ -231,7 +231,7 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     if plot_sums:
         visualization.visualize_match_matrix(match, score)
 
-    prior_mask_vis, measurement_mask_vis, matched_mixture_tuples = create_masks_simple(
+    prior_mask_vis, measurement_mask_vis, matched_mixture_tuples = create_match_mask(
         match, prior_gmm, measurement_gmm)
 
     prior_mask, measurement_mask = create_masks(match, score)
@@ -353,7 +353,7 @@ def cost(gmm, alpha, beta):
     return cost
 
 
-def create_masks_simple(match, prior_gmm, measurement_gmm):
+def create_match_mask(match, prior_gmm, measurement_gmm):
     #TODO(stlucas): create new gmms with these mappings from match
     vert_sums = np.sum(match, axis = 0) #column sum
     hor_sums = np.sum(match, axis = 1) # row sum
@@ -398,7 +398,7 @@ def create_masks(match, score):
 
     return prior_mask, measurement_mask
 
-def resample_mixture(gmm_tuple, n = int(1e5)):
+def resample_mixture(gmm_tuple, min_voxel_size = 0.01,n = int(1e5)):
     # implement something nice!
     weights = [0.5, 0.5]
     point_collection = list()
@@ -409,7 +409,7 @@ def resample_mixture(gmm_tuple, n = int(1e5)):
             print("no mixtures, continue!")
             continue
 
-        local_pc = gmm.sample_from_gmm(n)
+        local_pc = gmm.sample_from_gmm(n, option = "cov_size")
         point_collection.append(np.asarray(local_pc.points))
 
     point_collection = np.asarray(point_collection).reshape(-1,3)
@@ -420,8 +420,15 @@ def resample_mixture(gmm_tuple, n = int(1e5)):
     #NOTE: when not initialzing to zero -> somehow there are means around!
 
     #resampled_gmm.pc_simple_gmm(pc)
-    resampled_gmm.pc_hgmm(pc)
+    #visualization.mpl_visualize(pc)
+    #print("pc num points = ", np.asarray(pc.points).shape)
+    pc = pc.voxel_down_sample(min_voxel_size)
+    #print("pc num points = ", np.asarray(pc.points).shape)
+    #visualization.mpl_visualize(pc)
 
+
+    resampled_gmm.pc_hgmm(pc, min_points = 200, verbose = False)
+    #visualization.mpl_visualize(resampled_gmm)
     return resampled_gmm
 
 def analyze_result(pointcloud, gmm, point_groups):
