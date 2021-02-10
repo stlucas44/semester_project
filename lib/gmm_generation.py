@@ -12,6 +12,9 @@ import matplotlib.pyplot as plt
 sys.path.append('/home/lucas/semester_project/direct_gmm') # TODO(stlucas) find solution for this!
 from mixture import GaussianMixture
 
+#import warnings
+#warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 # defining small class for better handling
 class HgmmHelper:
     def __init__(self, points, weight, mean = None, cov = None):
@@ -65,7 +68,7 @@ class Gmm:
 
         print("  finished gmm_fit")
     def pc_hgmm(self, pc, n_h = 8, recompute = True, path = None, min_points = 100,
-                max_mixtures = 800, verbose = False):
+                max_mixtures = 800, verbose = False, cov_condition = 0.01):
         '''
         approach:
             object members:
@@ -97,7 +100,7 @@ class Gmm:
         all_points = np.asarray(pc.points)
         init_object = HgmmHelper(all_points, weight = 1.0)
         min_eig_ratio = 50
-        max_third_cov = 0.01
+
         #stop_condition = lambda l1, l2, l3, num_points: (s[0]/s[2] > min_eig_ratio and
         #   s[1]/s[2] > min_eig_ratio) or num_points < min_points
 
@@ -134,7 +137,7 @@ class Gmm:
 
                         #if (s[0]/s[2] > min_eig_ratio and
                         #   s[1]/s[2] > min_eig_ratio) or num_points < min_points:
-                        if any([2 * np.sqrt(s[2]) < max_third_cov,
+                        if any([2 * np.sqrt(s[2]) < cov_condition,
                             num_points < min_points,
                             len(self.means) > max_mixtures]):
                            #print(" sufficiently flat!")

@@ -15,14 +15,46 @@ def o3d_visualize(*obj):
     obj = [element.compute_vertex_normals() for element in obj]
     o3d.visualization.draw_geometries(obj)
 
+def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.4,
+                  view_angle = None,
+                  show_mean = True,
+                  path = None,
+                  show_z = True,
+                  title = None,
+                  show = True):
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    ax = fig.add_subplot(131, projection='3d')
+    #plot pointcloud and prior mesh
+    mpl_visualize(obj_list[0], cov_scale = cov_scale, colors = None, #[colors[0]],
+                  alpha = alpha, view_angle = view_angle,
+                  show_mean = show_mean, show_z = show_z, title = title[0],
+                  ax = ax)
+
+    #plot final gmm and matches
+    ax = fig.add_subplot(132, projection='3d')
+    mpl_visualize(obj_list[1], cov_scale = cov_scale, colors = None, #[colors[0]],
+                  alpha = alpha, view_angle = view_angle,
+                  show_mean = show_mean, show_z = show_z, title = title[0],
+                  ax = ax)
+
+    #plot match matrix eventually
+    if path is not None:
+        plt.savefig(path)
+
+    if show:
+        plt.show()
+
+
 def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
                   view_angle = None,
                   show_mean = True,
                   path = None,
                   show_z = True,
-                  title = None):
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
+                  title = None,
+                  ax = None):
+    if ax == None:
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
 
     if colors is None:
         colors = len(obj) * [None]
@@ -71,7 +103,8 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
     if path is not None:
         plt.savefig(path)
 
-    plt.show()
+    if ax == None:
+        plt.show()
 
 def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
     if ax is None:
@@ -200,17 +233,10 @@ def draw_box_plots(data, labels, title = None):
     ax1.boxplot(data, labels = labels, showfliers=False)
     plt.show()
 
-def draw_advanced_box_plots(data, labels, x_axis, title = None):
-    # source:
-
-    #data_a = [[1,2,5], [5,7,2,2,5], [7,2,5]]
-    #data_b = [[6,4,2], [1,2,5,3,2], [2,3,5,1]]
-    #data_c = [[6,4,2], [1,2,5,3,2], [2,3,5,1]]
-
-    print(data.shape)
+def draw_advanced_box_plots(data, labels, x_axis, title = None, path = None, show = True):
+    # source: https://stackoverflow.com/questions/16592222/matplotlib-group-boxplots
 
     data_a = data[:, :, 0].tolist()
-    print(data_a)
     data_b = data[:, :, 1].tolist()
     data_c = data[:, :, 2].tolist()
 
@@ -243,6 +269,13 @@ def draw_advanced_box_plots(data, labels, x_axis, title = None):
     plt.xticks(range(0, len(ticks) * 2, 2), ticks)
     plt.xlim(-2, len(ticks)*2)
     #plt.ylim(0, 8)
+    plt.xlabel('prior corruption (fraction of corrupted points)')
+    plt.ylabel('points within 2 sigma')
+
     plt.tight_layout()
-    #plt.savefig('boxcompare.png')
-    plt.show()
+    if path is not None:
+        plt.savefig(path)
+
+    if show:
+        plt.show()
+    plt.close('all')

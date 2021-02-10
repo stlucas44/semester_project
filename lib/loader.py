@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 import copy
+from datetime import datetime
+
 import numpy as np
 import open3d as o3d
 import scipy
@@ -177,3 +179,17 @@ def view_point_crop(mesh, pos, rpy,
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(int(n_points))
+
+
+def get_name(name):
+    start = name.rfind("/") + 1
+    end = name.rfind(".")
+    return name[start:end]
+
+def get_figure_path(params, plt_type):
+    folder = "imgs/"
+    name = get_name(params['path'])
+    date_time = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
+    date_time = date_time[:date_time.rfind(":")]
+    date_time = date_time[(date_time.find("-")+1):]
+    return folder + name + "_" + plt_type + "_" + date_time + ".png"

@@ -155,7 +155,7 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
 #@jit(target ="cuda")
 def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
               sample_ratio = 1.0, exit_early = False, n_resample = 1e5,
-              plot = False, refit_voxel_size = 0.05):
+              plot = False, refit_voxel_size = 0.05, cov_condition = 0.01):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -245,7 +245,8 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
                            prior_gmm.extract_gmm(prior_mask))
 
     # find all measurement_gmms that overlap with prior_gmms
-    resampled_mixture = resample_mixture(final_mixture_tuple, min_voxel_size = refit_voxel_size)
+    resampled_mixture = resample_mixture(final_mixture_tuple, min_voxel_size = refit_voxel_size,
+                                         cov_condition = cov_condition)
     measurement_only_mixture = measurement_gmm.extract_gmm(np.invert(measurement_mask))
 
     # create new (all true) masks and merge
@@ -398,7 +399,7 @@ def create_masks(match, score):
 
     return prior_mask, measurement_mask
 
-def resample_mixture(gmm_tuple, min_voxel_size = 0.01, n = int(1e5)):
+def resample_mixture(gmm_tuple, min_voxel_size = 0.01, n = int(1e5), cov_condition = 0.01):
     # implement something nice!
     weights = [0.5, 0.5]
     point_collection = list()
@@ -427,7 +428,7 @@ def resample_mixture(gmm_tuple, min_voxel_size = 0.01, n = int(1e5)):
     #visualization.mpl_visualize(pc)
 
 
-    resampled_gmm.pc_hgmm(pc, min_points = 200, verbose = False)
+    resampled_gmm.pc_hgmm(pc, min_points = 200, verbose = False, cov_condition = cov_condition)
     #visualization.mpl_visualize(resampled_gmm)
     return resampled_gmm
 
