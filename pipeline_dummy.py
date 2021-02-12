@@ -99,7 +99,8 @@ def main():
 
     for gmm_pair in merged_gmm_lists:
         mpl_visualize(*gmm_pair,
-                      colors = ['y', 'g', 'r', 'b'], cov_scale = 2.0,
+                      colors = ['y', 'g', 'r', 'b'],
+                      cov_scale = 2.0,
                       alpha = 0.2)
 
     # evaluate mesh

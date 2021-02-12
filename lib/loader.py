@@ -5,8 +5,11 @@ from datetime import datetime
 import numpy as np
 import open3d as o3d
 import scipy
+
 import trimesh
-from lib import visualization
+import pymesh
+
+from lib import gmm_generation, visualization
 
 
 
@@ -86,14 +89,15 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
 
     rpy = (roll, pitch, yaw)
 
-    sensor_max_range = 2 * view_point_dist
+    sensor_max_range = 3.0 * view_point_dist
 
-    view_point_mesh = view_point_crop(mesh, pos, rpy, sensor_max_range,
+    view_point_mesh, occluded_mesh = view_point_crop_by_trace(
+                                      mesh, pos, rpy, sensor_max_range,
                                       sensor_fov, angular_resolution,
                                       plot = plot)
-    return view_point_mesh[0]
+    return view_point_mesh
 
-def view_point_crop(mesh, pos, rpy,
+def view_point_crop_by_cast(mesh, pos, rpy,
                     sensor_max_range = 100.0,
                     sensor_fov = [180.0, 180.0],
                     angular_resolution = 1.0,
@@ -173,6 +177,97 @@ def view_point_crop(mesh, pos, rpy,
         ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
         ax.scatter((ray_centers + rays)[::step,0], (ray_centers + rays)[::step,1],
                    (ray_centers + rays)[::step,2], s = 1, c = 'g')
+        plt.show()
+    #TODO (stlucas): keep removed triangles in different mesh
+    return mesh, occluded_mesh
+
+
+def view_point_crop_by_trace(mesh, pos, rpy,
+                    sensor_max_range = 100.0,
+                    sensor_fov = [180.0, 180.0],
+                    angular_resolution = 1.0,
+                    get_pc = False,
+                    plot = False):
+    # cut all occluded triangles
+    '''
+    Cut all occluded triangles
+    Overview:
+    1. Transform to trimesh for better handling
+    2. Draw rays from each triangle centroid to the camera
+    3. Check if angles are in range of the view point
+    3. Check if rays intersect other triangles
+    4. Apply mask to keep the local mesh
+
+    returns the occlusion mesh
+    '''
+
+    #compte classic normals
+    mesh.compute_triangle_normals()
+    mesh.compute_vertex_normals()
+
+    py_mesh = pymesh.meshio.form_mesh(np.asarray(mesh.vertices),
+                                   np.asarray(mesh.triangles))
+
+    centroids, a = gmm_generation.get_centroids(py_mesh)
+    occluded_mesh = copy.deepcopy(mesh)
+
+    # create rays and trace them ray.ray_pyembree--> pyembree for more speed
+    rays = -(pos - centroids)
+
+    # roll, pitch, yaw
+    rpy = np.deg2rad(rpy)
+    sensor_fov = np.deg2rad(sensor_fov)
+
+    vp_bounds_pitch = (rpy[1] - sensor_fov[1], rpy[1] + sensor_fov[1])
+    vp_bounds_yaw = (rpy[2] - sensor_fov[0], rpy[2] + sensor_fov[0])
+
+    in_vp_mask = np.zeros((len(rays),), dtype = bool)
+
+    #remove all points not in viewpoint
+    for i, ray in zip(np.arange(0,len(rays)), rays):
+        rpy_ray = [0.0, np.arctan2(ray[2], np.sqrt(np.square(ray[1]) + np.square(ray[0]))),
+                   np.arctan2(-ray[1],-ray[0])]
+
+
+        in_yaw = vp_bounds_yaw[0] <= rpy_ray[2] <= vp_bounds_yaw[1]
+        in_pitch = vp_bounds_pitch[0] <= rpy_ray[1] <= vp_bounds_pitch[1]
+
+        in_vp_mask[i] = in_yaw & in_pitch
+
+    mesh.remove_triangles_by_mask([not element for element in in_vp_mask])
+    mesh.remove_unreferenced_vertices()
+
+    local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
+                                      faces = mesh.triangles,
+                                      face_normals = mesh.triangle_normals,
+                                      vertex_normals = mesh.vertex_normals)
+    centroids = centroids[in_vp_mask]
+    rays = rays[in_vp_mask]
+
+    print(" starting ray trace")
+    raytracer = trimesh.ray.ray_triangle.RayMeshIntersector(local_mesh)
+    mesh_intersections_mask = raytracer.intersects_any(centroids, -rays)
+
+    #print(np.asarray(mesh.triangles).shape, mask.shape)
+    mesh.remove_triangles_by_mask(~mesh_intersections_mask)
+    mesh.remove_unreferenced_vertices()
+
+    anti_mask = ~in_vp_mask
+    anti_mask[in_vp_mask] = mesh_intersections_mask
+
+    print("  number of hit triangles: ", np.asarray(mesh.triangles).shape[0],
+          " of ", len(anti_mask))
+
+    occluded_mesh.remove_triangles_by_mask(anti_mask)
+    occluded_mesh.remove_unreferenced_vertices()
+
+    if plot:
+        #ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
+        ax = visualization.visualize_mesh(mesh)
+        step = 10
+        ax.scatter(pos[0], pos[1], pos[2], s = 10, c = 'r')
+        ax.scatter((pos + rays)[::step,0], (pos + rays)[::step,1],
+                   (pos + rays)[::step,2], s = 1, c = 'g')
         plt.show()
     #TODO (stlucas): keep removed triangles in different mesh
     return mesh, occluded_mesh
