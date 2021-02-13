@@ -242,7 +242,7 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     mesh.compute_vertex_normals()
 
     if in_vp_mask.sum == 0:
-        print("no points in view point")
+        print("  no points in view point")
         return None, occluded_mesh
 
     local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
@@ -256,11 +256,11 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     local_pos = np.reshape(pos, (1,3))
     multipos = np.repeat(local_pos, len(centroids), axis = 0)
 
-    print(" starting ray trace")
+    print("  starting ray trace")
     raytracer = trimesh.ray.ray_triangle.RayMeshIntersector(local_mesh)
-    mesh_intersections_mask = raytracer.intersects_any(centroids, -0.99 * rays)
+    mesh_intersections_mask = raytracer.intersects_any(centroids - 0.01 * rays, -0.99 * rays)
 
-    print("hit : ", np.asarray(mesh_intersections_mask).sum(), " of ",
+    print("  double intersection: ", np.asarray(mesh_intersections_mask).sum(), " of ",
           mesh_intersections_mask.shape[0])
     mesh.remove_triangles_by_mask(mesh_intersections_mask)
     mesh.remove_unreferenced_vertices()
@@ -295,12 +295,14 @@ def view_point_crop_by_trace(mesh, pos, rpy,
         ax.scatter((pos + rays)[::step,0], (pos + rays)[::step,1],
                    (pos + rays)[::step,2], s = 1, c = 'g')
 
+        '''
         ax.scatter(centroids[::step, 0], centroids[::step, 1], centroids[::step, 2],
                    c = 'c')
         for ray in rays:
             ax.plot([pos[0], pos[0] + ray[0]],
                     [pos[1], pos[1] + ray[1]],
                     [pos[2], pos[2] + ray[2]])
+        '''
         for element in rpy_b:
             r = length * np.asarray([np.cos(element[2]), np.sin(element[2]), np.sin(element[1])])
             ax.plot([pos[0], pos[0] + r[0]],

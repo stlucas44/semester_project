@@ -31,7 +31,7 @@ speed = 0 # 0 for high sensor resolution,
 plot_sensor = True
 plot_match = False
 plot_result = False
-plot_subplots = True
+plot_subplots = False
 show_subplots = False
 
 # sensor params:
