@@ -22,11 +22,13 @@ bunny_mesh_file_corrupted = data_folder + "/bunny/reconstruction/bun_zipper_res4
 
 
 vicon_file = data_folder + "/vicon.stl"
-vicon_name = vicon_file.rfind("/")
 curve_file = data_folder + "/curve.off"
+rone_file =  data_folder + "/rhone_enu.off"
+gorner_file = data_folder + "/gorner.off"
+
 
 speed = 0 # 0 for high sensor resolution,
-plot_sensor = False
+plot_sensor = True
 plot_match = False
 plot_result = False
 plot_subplots = True
@@ -186,14 +188,22 @@ if __name__ == "__main__":
 
     #settings:
     bunny_mesh_params = {"path" : bunny_mesh_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
-                         "disuption_range" : (0.0, 0.5),
-                         "refit_voxel_size" : 0.01}
+                         "disruption_range" : (0.0, 0.5),
+                         "refit_voxel_size" : 0.01,
+                         "cov_condition" : 0.02}
     curve_mesh_params = {"path" : curve_file, "aag" : (3.0,6.0), "pc_sensor_fov" : [100, 85],
+                         "disruption_range" : (0.5, 2.0),
+                         "refit_voxel_size": 0.01,
+                         "cov_condition" : 0.05}
+
+    vicon_params = {"path" : vicon_file, "aag" : (3.0,6.0), "pc_sensor_fov" : [100, 85],
                          "disruption_range" : (0.5, 2.0),
                          "refit_voxel_size": 0.5,
                          "cov_condition" : 0.05}
 
+    #params = curve_mesh_params
     params = curve_mesh_params
+
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 5

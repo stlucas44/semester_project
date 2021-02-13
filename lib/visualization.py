@@ -28,14 +28,14 @@ def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.4,
     mpl_visualize(obj_list[0], cov_scale = cov_scale, colors = None, #[colors[0]],
                   alpha = alpha, view_angle = view_angle,
                   show_mean = show_mean, show_z = show_z, title = title[0],
-                  ax = ax)
+                  init_ax = ax)
 
     #plot final gmm and matches
     ax = fig.add_subplot(132, projection='3d')
     mpl_visualize(obj_list[1], cov_scale = cov_scale, colors = None, #[colors[0]],
                   alpha = alpha, view_angle = view_angle,
                   show_mean = show_mean, show_z = show_z, title = title[0],
-                  ax = ax)
+                  init_ax = ax)
 
     #plot match matrix eventually
     if path is not None:
@@ -51,14 +51,16 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
                   path = None,
                   show_z = True,
                   title = None,
-                  ax = None):
-    if ax == None:
+                  init_ax = None):
+    if init_ax == None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
 
+    else:
+        ax = init_ax
     if colors is None:
         colors = len(obj) * [None]
-        print(colors)
+        #print(colors)
 
     iterator = 0
     for element in obj:
@@ -103,7 +105,7 @@ def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
     if path is not None:
         plt.savefig(path)
 
-    if ax == None:
+    if init_ax == None:
         plt.show()
 
 def visualize_mesh(mesh, ax = None, c = 'b', label = "mesh", alpha = 0.4, linewidth = 0.5, show = False):
