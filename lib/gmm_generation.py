@@ -141,7 +141,7 @@ class Gmm:
                         #   s[1]/s[2] > min_eig_ratio) or num_points < min_points:
                         if any([2 * np.sqrt(s[2]) < cov_condition,
                             num_points < min_points,
-                            len(self.means) > max_mixtures]):
+                            len(self.means) + len(curr_list) > max_mixtures]):
                            #print(" sufficiently flat!")
 
                            self.means.append(mean)
@@ -271,9 +271,14 @@ class Gmm:
         self.covariances = []
         self.weights = []
 
-        if n > len(init_mesh.triangles):
-            n = len(init_mesh.triangles) - 1
-        # transform mesh to pymesh
+        num_triangles = len(init_mesh.triangles)
+        print("  starting hgmm_fit with num_points = ", num_triangles)
+
+        if n > num_triangles:
+            n = num_triangles - 1
+        if max_mixtures > num_triangles:
+            max_mixtures = num_triangles
+
         init_params = 'kmeans'
         tol = 1e-2
         max_iter = 50
@@ -290,7 +295,7 @@ class Gmm:
                                                      max_iter=max_iter,tol=tol)
 
                 num_train_points = len(mesh.vertices)
-                print("  starting mesh_fit with vertices = ", num_train_points)
+                #print("  starting mesh_fit with vertices = ", num_train_points)
 
                 #generate means, covs and faces
                 com,a = get_centroids(mesh)
@@ -307,8 +312,7 @@ class Gmm:
                     cov = local_generator.covariances_[i]
                     u, s, vt = np.linalg.svd(cov)
 
-                    print("hgmm exit condition: ")
-                    exit_condition = any([s[2] < cov_condition,
+                    exit_condition = any([2 * np.sqrt(s[2]) < cov_condition,
                                          np.asarray([labels == i]).sum() < min_points,
                                          len(self.means) > max_mixtures])
                     if exit_condition:

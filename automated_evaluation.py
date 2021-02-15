@@ -32,7 +32,7 @@ plot_sensor = False
 plot_match = False
 plot_result = False
 plot_subplots = True
-show_subplots = True
+show_subplots = False
 
 # sensor params:
 if speed == 0:
@@ -88,6 +88,8 @@ def main(params, corruption_percentage):
     disuption_range = params["disruption_range"]
     disruption_patch_size = params["disruption_patch_size"]
     cov_condition = params["cov_condition"]
+    cov_condition_resampling = params["cov_condition_resampling"]
+
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
     # load true mesh
@@ -98,7 +100,6 @@ def main(params, corruption_percentage):
                                   plot = plot_sensor)
 
     # sample it for comparison and update
-    true_pc = sample_points(true_mesh, n_points = n_pc_true) #n_pc_true)
     measurement_pc = sample_points(true_mesh, n_points = n_pc_measurement)
 
     measurement_gmm = Gmm()
@@ -107,13 +108,15 @@ def main(params, corruption_percentage):
     save_to_file(measurement_gmm, get_file_path(params, "measurement", "yaml"))
 
 
+
     #measurement_gmm.pc_simple_gmm(measurement_pc, path = tmp_gmm_true_pc, recompute = True)
     if plot_subplots:
         mpl_subplots((measurement_pc, measurement_gmm), cov_scale = 2.0,
                      path = get_figure_path(params, "measurement"),
                      title = ("measurement pc", "measurement gmm"),
                      show = show_subplots)
-
+    # Free memory
+    measurement_pc = None
 
 
     # generate gmms
@@ -158,7 +161,7 @@ def main(params, corruption_percentage):
             n_resample = n_resampling,
             plot = plot_match,
             refit_voxel_size = refit_voxel_size,
-            cov_condition = cov_condition)
+            cov_condition = cov_condition_resampling)
 
     # save to file!
     save_to_file(final_gmm, get_file_path(params, "final", ".yaml"))
@@ -180,9 +183,14 @@ def main(params, corruption_percentage):
                  title = ("true_mesh", "final gmm"),
                  show = show_subplots)
 
+    # Free memory:
+    prior_mesh = None
+
     #### compute scores
     # score the corrupted gmm with sampled mesh
     print('Starting scoring'.center(80,'*'))
+    true_pc = sample_points(true_mesh, n_points = n_pc_true) #n_pc_true)
+
 
     score_true = evaluation.eval_quality_maha(true_gmm, true_pc)
     score_prior = evaluation.eval_quality_maha(prior_gmm, true_pc)
@@ -213,7 +221,7 @@ if __name__ == "__main__":
                          "disruption_patch_size" : 1.0,
                          "refit_voxel_size": 0.1,
                          "cov_condition" : 0.1,
-                         "cov_condition_resampling" : 0.5
+                         "cov_condition_resampling" : 0.15
                          }
 
     vicon_params = {"path" : vicon_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100, 85],
@@ -221,13 +229,12 @@ if __name__ == "__main__":
                     "disruption_patch_size" : 0.5,
                     "refit_voxel_size": 0.05,
                     "cov_condition" : 0.05,
-                    "cov_condition_resampling" : 0.5
+                    "cov_condition_resampling" : 0.1
                     }
 
-    #params = bunny_mesh_params
-    params = curve_mesh_params
+    params = bunny_mesh_params
+    #params = curve_mesh_params
     #params = vicon_params
-
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 5
