@@ -201,6 +201,7 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     returns the occlusion mesh
     '''
 
+    sensor_fov_grad = sensor_fov
     #compte classic normals
     mesh.compute_triangle_normals()
     mesh.compute_vertex_normals()
@@ -211,50 +212,64 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     centroids, a = gmm_generation.get_centroids(py_mesh)
     occluded_mesh = copy.deepcopy(mesh)
     old_mesh = copy.deepcopy(mesh)
+    extended_mesh = copy.deepcopy(mesh)
 
     # create rays and trace them ray.ray_pyembree--> pyembree for more speed
     rays = np.asarray(centroids - pos) #(pos - centroids)
 
     # roll, pitch, yaw
     rpy = np.deg2rad(rpy)
-    sensor_fov = np.deg2rad(sensor_fov) / 2.0
 
+    sensor_fov = np.deg2rad(sensor_fov_grad) / 2.0
+    print("sensor_fov: ", sensor_fov)
     vp_bounds_pitch = (rpy[1] - sensor_fov[1], rpy[1] + sensor_fov[1])
     vp_bounds_yaw = (rpy[2] - sensor_fov[0], rpy[2] + sensor_fov[0])
-
     in_vp_mask = np.zeros((len(rays),), dtype = bool)
+
+    sensor_fov_extended = np.deg2rad([sensor_fov_grad[0] + 10.0,
+                                      sensor_fov_grad[1] + 10.0]) / 2.0
+    print("sensor_fov_extended: ", sensor_fov_extended)
+    vp_bounds_pitch_extended = (rpy[1] - sensor_fov_extended[1], rpy[1] + sensor_fov_extended[1])
+    vp_bounds_yaw_extended = (rpy[2] - sensor_fov_extended[0], rpy[2] + sensor_fov_extended[0])
+    in_vp_mask_extended = np.zeros((len(rays),), dtype = bool)
 
     #remove all points not in viewpoint
     for i, ray in zip(np.arange(0,len(rays)), rays):
         rpy_ray = [0.0, np.arctan2(ray[2], np.sqrt(np.square(ray[1]) + np.square(ray[0]))),
                    np.arctan2(ray[1],ray[0])]
 
-
         in_yaw = vp_bounds_yaw[0] <= rpy_ray[2] <= vp_bounds_yaw[1]
         in_pitch = vp_bounds_pitch[0] <= rpy_ray[1] <= vp_bounds_pitch[1]
 
+        in_yaw_extended = vp_bounds_yaw_extended[0] <= rpy_ray[2] <= vp_bounds_yaw_extended[1]
+        in_pitch_extended = vp_bounds_pitch_extended[0] <= rpy_ray[1] <= vp_bounds_pitch_extended[1]
+
         in_vp_mask[i] = in_yaw & in_pitch
+        in_vp_mask_extended[i] = in_yaw_extended & in_pitch_extended
 
     mesh.remove_triangles_by_mask([not element for element in in_vp_mask])
     mesh.remove_unreferenced_vertices()
-
     mesh.compute_triangle_normals()
     mesh.compute_vertex_normals()
+
+    extended_mesh.remove_triangles_by_mask([not element for element in in_vp_mask_extended])
+    extended_mesh.remove_unreferenced_vertices()
+    extended_mesh.compute_triangle_normals()
+    extended_mesh.compute_vertex_normals()
 
     if in_vp_mask.sum == 0:
         print("  no points in view point")
         return None, occluded_mesh
 
-    local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
-                                      faces = mesh.triangles,
-                                      face_normals = mesh.triangle_normals,
-                                      vertex_normals = mesh.vertex_normals)
+    local_mesh = trimesh.base.Trimesh(vertices = extended_mesh.vertices,
+                                      faces = extended_mesh.triangles,
+                                      face_normals = extended_mesh.triangle_normals,
+                                      vertex_normals = extended_mesh.vertex_normals)
     centroids = centroids[in_vp_mask]
     rays = rays[in_vp_mask]
-    print("  ", len(centroids), " of ", len(in_vp_mask), " in VP")
+    print(" in fov: ", len(centroids), " of ", len(in_vp_mask))
+    print(" in extended fov: ", in_vp_mask_extended.sum(), " of ", len(in_vp_mask_extended))
 
-    local_pos = np.reshape(pos, (1,3))
-    multipos = np.repeat(local_pos, len(centroids), axis = 0)
 
     print("  starting ray trace")
     raytracer = trimesh.ray.ray_triangle.RayMeshIntersector(local_mesh)
@@ -268,7 +283,7 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     anti_mask = [not element for element in in_vp_mask]
     #anti_mask[in_vp_mask] = mesh_intersections_mask
 
-    print("  number of hit triangles: ", np.asarray(mesh.triangles).shape[0],
+    print("  number of selected triangles: ", np.asarray(mesh.triangles).shape[0],
           " of ", len(anti_mask))
 
     occluded_mesh.remove_triangles_by_mask(anti_mask)
