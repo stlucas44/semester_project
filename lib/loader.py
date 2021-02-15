@@ -221,14 +221,12 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     rpy = np.deg2rad(rpy)
 
     sensor_fov = np.deg2rad(sensor_fov_grad) / 2.0
-    print("sensor_fov: ", sensor_fov)
     vp_bounds_pitch = (rpy[1] - sensor_fov[1], rpy[1] + sensor_fov[1])
     vp_bounds_yaw = (rpy[2] - sensor_fov[0], rpy[2] + sensor_fov[0])
     in_vp_mask = np.zeros((len(rays),), dtype = bool)
 
     sensor_fov_extended = np.deg2rad([sensor_fov_grad[0] + 10.0,
                                       sensor_fov_grad[1] + 10.0]) / 2.0
-    print("sensor_fov_extended: ", sensor_fov_extended)
     vp_bounds_pitch_extended = (rpy[1] - sensor_fov_extended[1], rpy[1] + sensor_fov_extended[1])
     vp_bounds_yaw_extended = (rpy[2] - sensor_fov_extended[0], rpy[2] + sensor_fov_extended[0])
     in_vp_mask_extended = np.zeros((len(rays),), dtype = bool)

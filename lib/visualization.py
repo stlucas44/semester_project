@@ -22,7 +22,7 @@ def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.4,
                   show_z = True,
                   title = None,
                   show = True):
-    fig = plt.figure(figsize=(15,15))
+    fig = plt.figure(figsize=(20,10))
     ax = fig.add_subplot(121, projection='3d')
     #plot pointcloud and prior mesh
     mpl_visualize(obj_list[0], cov_scale = cov_scale, colors = None, #[colors[0]],

@@ -260,6 +260,95 @@ class Gmm:
 
         print("  finished mesh_fit")
 
+    def mesh_hgmm(self, init_mesh, n = 8, recompute = True,
+                  min_points = 100,
+                  max_mixtures = 800,
+                  verbose = False,
+                  cov_condition = 0.01):
+        #transform o3d to pymesh
+
+        self.means = []
+        self.covariances = []
+        self.weights = []
+
+        if n > len(init_mesh.triangles):
+            n = len(init_mesh.triangles) - 1
+        # transform mesh to pymesh
+        init_params = 'kmeans'
+        tol = 1e-2
+        max_iter = 50
+        num_gaussians = n
+        mesh_list = [(np.asarray(init_mesh.vertices), np.asarray(init_mesh.triangles) , 1.0)]
+        next_list = []
+        while(len(mesh_list) > 0):
+            for (verts, faces, weight) in mesh_list:
+                mesh = pymesh.meshio.form_mesh(verts,
+                                               faces)
+
+                local_generator = GaussianMixture(n_components = n,
+                                                     init_params=init_params,
+                                                     max_iter=max_iter,tol=tol)
+
+                num_train_points = len(mesh.vertices)
+                print("  starting mesh_fit with vertices = ", num_train_points)
+
+                #generate means, covs and faces
+                com,a = get_centroids(mesh)
+                face_vert = get_face_verts(mesh.vertices, mesh.faces)
+                data_covar = get_tri_covar(face_vert) # what does it expect?!
+
+                local_generator.set_covars(data_covar)
+                local_generator.set_areas(a)
+                labels = local_generator.fit_predict(com)
+                local_generator.set_covars(None)
+                local_generator.set_areas(None)
+
+                for i in np.arange(0,num_gaussians):
+                    cov = local_generator.covariances_[i]
+                    u, s, vt = np.linalg.svd(cov)
+
+                    print("hgmm exit condition: ")
+                    exit_condition = any([s[2] < cov_condition,
+                                         np.asarray([labels == i]).sum() < min_points,
+                                         len(self.means) > max_mixtures])
+                    if exit_condition:
+                        #write results
+                        self.means.append(local_generator.means_[i])
+                        self.weights.append(weight * local_generator.weights_[i])
+                        self.covariances.append(cov)
+                        self.precs.append(local_generator.precisions_[i, :, :])
+                        self.precs_chol.append(local_generator.precisions_cholesky_[i, : , :])
+
+                    else:
+                        # create submesh and restart!
+                        submesh = pymesh.meshio.form_mesh(
+                                        np.asarray(mesh.vertices),
+                                        np.asarray(mesh.faces[labels == i]))
+                        submesh, _ = pymesh.remove_isolated_vertices(submesh)
+
+                        next_list.append((np.asarray(submesh.vertices),
+                                          np.asarray(submesh.faces),
+                                          weight * local_generator.weights_[i]))
+
+            mesh_list = copy.deepcopy(next_list)
+            next_list = []
+
+        self.num_gaussians = len(self.means)
+        self.means = np.asarray(self.means)
+        self.weights = np.asarray(self.weights)
+        self.covariances = np.asarray(self.covariances)
+        self.precs = np.asarray(self.precs)
+        self.precs_chol = np.asarray(self.precs_chol)
+        self.measured = np.ones((self.num_gaussians,), dtype=bool)
+
+        self.gmm_generator = sklearn.mixture.GaussianMixture(n_components = self.num_gaussians, max_iter = 30)
+        self.gmm_generator.means_ = self.means
+        self.gmm_generator.weights_ = self.weights
+        self.gmm_generator.covariances_ = self.covariances
+        self.gmm_generator.precisions_ = self.precs
+        self.gmm_generator.precisions_cholesky_ = self.precs_chol
+
+        print("  finished mesh hgmm, resulted in : ", len(self.means), " mixtures")
 
     def naive_mesh_gmm(self, init_mesh, mesh_std = 0.1):
         self.num_train_points = len(init_mesh.vertices)
@@ -331,6 +420,23 @@ class Gmm:
             #print("total area:", self.areas.sum())
 
             self.samples, self.sample_labels = local_gmm.gmm_generator.sample(n_points)
+
+        elif option == "mixed":
+            mask = np.ones((len(self.means,)), dtype = bool)
+            local_gmm = self.extract_gmm(mask)
+            self.areas = np.zeros(mask.shape)
+            for (iterator, cov) in zip(np.arange(0,len(self.covariances)),
+                                       self.covariances):
+                _, S, _ = np.linalg.svd(cov)
+                self.areas[iterator] = np.pi * S[0] * S[1]
+
+            local_gmm.weights = (self.areas / self.areas.sum()) * self.weights
+            local_gmm.gmm_generator.weights = local_gmm.weights
+            local_gmm.areas = self.areas
+            #print("total area:", self.areas.sum())
+
+            self.samples, self.sample_labels = local_gmm.gmm_generator.sample(n_points)
+
         else:
             print(" unkown sampling strategy!")
 

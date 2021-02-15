@@ -410,7 +410,7 @@ def resample_mixture(gmm_tuple, min_voxel_size = 0.01, n = int(1e5), cov_conditi
             print("no mixtures, continue!")
             continue
 
-        local_pc = gmm.sample_from_gmm(n, option = "cov_size")
+        local_pc = gmm.sample_from_gmm(n, option = "mixed")
         point_collection.append(np.asarray(local_pc.points))
 
     point_collection = np.asarray(point_collection).reshape(-1,3)
