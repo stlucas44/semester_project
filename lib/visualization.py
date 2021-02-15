@@ -22,8 +22,8 @@ def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.4,
                   show_z = True,
                   title = None,
                   show = True):
-    fig = plt.figure(figsize=plt.figaspect(0.5))
-    ax = fig.add_subplot(131, projection='3d')
+    fig = plt.figure(figsize=(15,15))
+    ax = fig.add_subplot(121, projection='3d')
     #plot pointcloud and prior mesh
     mpl_visualize(obj_list[0], cov_scale = cov_scale, colors = None, #[colors[0]],
                   alpha = alpha, view_angle = view_angle,
@@ -31,10 +31,10 @@ def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.4,
                   init_ax = ax)
 
     #plot final gmm and matches
-    ax = fig.add_subplot(132, projection='3d')
+    ax = fig.add_subplot(122, projection='3d')
     mpl_visualize(obj_list[1], cov_scale = cov_scale, colors = None, #[colors[0]],
                   alpha = alpha, view_angle = view_angle,
-                  show_mean = show_mean, show_z = show_z, title = title[0],
+                  show_mean = show_mean, show_z = show_z, title = title[1],
                   init_ax = ax)
 
     #plot match matrix eventually

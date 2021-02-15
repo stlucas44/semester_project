@@ -105,11 +105,15 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
                              offset_range = (-0.5,0.5),
                              max_batch_area = 0.3,
                              check_intersection = False,
+                             smooth = 0,
                              verbose = False):
 
 
     mesh.compute_triangle_normals()
     mesh.compute_vertex_normals()
+
+    new_mesh = copy.deepcopy(mesh)
+
 
     #transform to trimesh
     local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
@@ -117,8 +121,8 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
                                       face_normals = mesh.triangle_normals,
                                       vertex_normals = mesh.vertex_normals)
 
-    points = np.asarray(mesh.vertices)
-    faces = np.asarray(mesh.triangles)
+    points = np.asarray(new_mesh.vertices)
+    faces = np.asarray(new_mesh.triangles)
     overall_neighboring_index = np.empty((0,))
     #print(local_points_index[:10])
     for i in np.arange(0, n_max):
@@ -161,11 +165,12 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
 
 
     if verbose: print("finished corruption")
-    mesh.vertices = o3d.utility.Vector3dVector(points)
-    mesh.compute_triangle_normals()
-    mesh.compute_vertex_normals()
 
-    self_intersection = mesh.is_self_intersecting()
+    new_mesh.vertices = o3d.utility.Vector3dVector(points)
+    new_mesh.compute_triangle_normals()
+    new_mesh.compute_vertex_normals()
+
+    self_intersection = new_mesh.is_self_intersecting()
 
     # remove triangles?
     if self_intersection and check_intersection:
@@ -174,7 +179,7 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
     elif self_intersection:
         print("selfintersection!!")
 
-    return mesh
+    return new_mesh
 
 def remove_region(mesh, region_center, region):
     print("implement REMOVE REGION!")

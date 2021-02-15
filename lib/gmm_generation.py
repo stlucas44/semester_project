@@ -4,8 +4,10 @@ import scipy
 import sklearn.mixture
 import sys
 import open3d as o3d
+import pandas as pd
 import pickle
 import pymesh
+import yaml
 
 import matplotlib.pyplot as plt
 
@@ -540,3 +542,14 @@ def nearPSD(A,epsilon=0):
    B = T * vec * np.diag(np.array(np.sqrt(val)).reshape((n)))
    out = B*B.T
    return(out)
+
+def save_to_file(gmm, path):
+    dict = {'means' : gmm.means,
+            'weights' : gmm.weights,
+            'covs' : gmm.covariances,
+            'precs' : gmm.precs,
+            'precs_chol' : gmm.precs_chol}
+
+    with open(path, 'w') as f:
+        data = yaml.dump(dict, f)
+    return

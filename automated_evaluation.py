@@ -7,7 +7,7 @@ from lib import evaluation
 from lib import registration
 from lib import merge
 
-from lib.gmm_generation import Gmm
+from lib.gmm_generation import Gmm, save_to_file
 from lib.loader import *
 from lib.visualization import *
 
@@ -30,9 +30,9 @@ gorner_file = data_folder + "/gorner.off"
 speed = 0 # 0 for high sensor resolution,
 plot_sensor = True
 plot_match = False
-plot_result = False
-plot_subplots = False
-show_subplots = False
+plot_result = True
+plot_subplots = True
+show_subplots = True
 
 # sensor params:
 if speed == 0:
@@ -86,11 +86,12 @@ def main(params, corruption_percentage):
     pc_sensor_fov = params['pc_sensor_fov']
     refit_voxel_size = params['refit_voxel_size']
     disuption_range = params["disruption_range"]
+    disruption_patch_size = params["disruption_patch_size"]
     cov_condition = params["cov_condition"]
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
     # load true mesh
-    true_mesh = automated_view_point_mesh(path, altitude_above_ground = altitude_above_ground,
+    true_mesh, pos = automated_view_point_mesh(path, altitude_above_ground = altitude_above_ground,
                                   sensor_fov = pc_sensor_fov,
                                   #sensor_max_range = 100.0,
                                   angular_resolution = 1.0,
@@ -103,11 +104,13 @@ def main(params, corruption_percentage):
     measurement_gmm = Gmm()
     measurement_gmm.pc_hgmm(measurement_pc, recompute = recompute_items, path = tmp_gmm_true_pc,
                             min_points = 500, cov_condition = cov_condition)
+
+
     #measurement_gmm.pc_simple_gmm(measurement_pc, path = tmp_gmm_true_pc, recompute = True)
     if plot_subplots:
         mpl_subplots((measurement_pc, measurement_gmm), cov_scale = 2.0,
                      path = get_figure_path(params, "measurement"),
-                     title = ("measurement pc, measurement gmm"),
+                     title = ("measurement pc", "measurement gmm"),
                      show = show_subplots)
 
 
@@ -116,6 +119,7 @@ def main(params, corruption_percentage):
     true_gmm = Gmm()
     #true_gmm.mesh_gmm(true_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_true)
     true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
+    save_to_file(true_gmm, get_file_path(params, "true", "yaml"))
 
 
     #### corrupted mesh
@@ -125,7 +129,7 @@ def main(params, corruption_percentage):
     prior_mesh = corrupt_region_connected(true_mesh, corruption_percentage = corruption_percentage,
                                  n_max = 10,
                                  offset_range = disuption_range,
-                                 max_batch_area = 0.15)
+                                 max_batch_area = disruption_patch_size)
 
     # generate gmm from prior
     prior_gmm = Gmm()
@@ -135,7 +139,7 @@ def main(params, corruption_percentage):
     if plot_subplots:
         mpl_subplots((prior_mesh, prior_gmm), cov_scale = 2.0,
                  path = get_figure_path(params, "prior"),
-                 title = "prior mesh, prior gmm", show = show_subplots)
+                 title = ("prior mesh", "prior gmm"), show = show_subplots)
 
     #### merge mesh with corrupted point cloud
     # apply merge with
@@ -150,6 +154,11 @@ def main(params, corruption_percentage):
             plot = plot_match,
             refit_voxel_size = refit_voxel_size,
             cov_condition = cov_condition)
+
+    # save to file!
+    save_to_file(final_gmm, get_file_path(params, "final", ".yaml"))
+
+
     if plot_result:
         mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
         mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
@@ -163,7 +172,7 @@ def main(params, corruption_percentage):
     if plot_subplots:
         mpl_subplots((true_mesh, final_gmm), cov_scale = 2.0,
                  path = get_figure_path(params, "final"),
-                 title = ("true_mesh, final gmm"),
+                 title = ("true_mesh", "final gmm"),
                  show = show_subplots)
 
     #### compute scores
@@ -189,32 +198,29 @@ if __name__ == "__main__":
     #settings:
     bunny_mesh_params = {"path" : bunny_mesh_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
                          "disruption_range" : (0.0, 0.5),
+                         "disruption_patch_size" : 0.15,
                          "refit_voxel_size" : 0.01,
                          "cov_condition" : 0.02}
-    curve_mesh_params = {"path" : curve_file, "aag" : (3.0,6.0), "pc_sensor_fov" : [100, 85],
+    curve_mesh_params = {"path" : curve_file, "aag" : (2.0,5.0), "pc_sensor_fov" : [100, 85],
                          "disruption_range" : (0.5, 2.0),
-                         "refit_voxel_size": 0.01,
-                         "cov_condition" : 0.05}
+                         "disruption_patch_size" : 0.5,
+                         "refit_voxel_size": 0.1,
+                         "cov_condition" : 0.1,
+                         }
 
     vicon_params = {"path" : vicon_file, "aag" : (3.0,6.0), "pc_sensor_fov" : [100, 85],
-                         "disruption_range" : (0.5, 2.0),
-                         "refit_voxel_size": 0.5,
-                         "cov_condition" : 0.05}
+                    "disruption_range" : (0.5, 2.0),
+                    "disruption_patch_size" : 0.5,
+                    "refit_voxel_size": 0.05,
+                    "cov_condition" : 0.05}
 
-    #params = curve_mesh_params
+    #params = bunny_mesh_params
     params = curve_mesh_params
-
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 5
     results = np.zeros((len(corruptions), iterations_per_scale, 3))
 
-    # variables: bunny: 0-5 - 1.0, curve = 5-10
-    files = [bunny_mesh_file, curve_file, vicon_file]
-    altitude_above_ground = (3.0,6.0)
-    pc_sensor_fov = [100, 85]
-
-    corruption_scale = 0.2
     for (scale_number, corruption_scale) in zip(np.arange(0,len(corruptions)),corruptions):
         for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
             print("** Starting on current scale:", corruption_scale, " current iteration:", iteration, " **")
@@ -224,6 +230,5 @@ if __name__ == "__main__":
             gc.collect()
             #print("results: ", results)
     labels = ["True", "Prior", "Refined"]
-    #draw_box_plots(results[0], labels, title = "Dataset: " + get_name(params['path']))
     draw_advanced_box_plots(results, labels, corruptions, path = get_figure_path(params, "box"),
                             show = False)

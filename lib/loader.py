@@ -95,7 +95,7 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                                       mesh, pos, rpy, sensor_max_range,
                                       sensor_fov, angular_resolution,
                                       plot = plot)
-    return view_point_mesh
+    return view_point_mesh, pos
 
 def view_point_crop_by_cast(mesh, pos, rpy,
                     sensor_max_range = 100.0,
@@ -328,3 +328,11 @@ def get_figure_path(params, plt_type):
     date_time = date_time[:date_time.rfind(":")]
     date_time = date_time[(date_time.find("-")+1):]
     return folder + name + "_" + plt_type + "_" + date_time + ".png"
+
+def get_file_path(params, plt_type, file_type):
+    folder = "files/"
+    name = get_name(params['path'])
+    date_time = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
+    date_time = date_time[:date_time.rfind(":")]
+    date_time = date_time[(date_time.find("-")+1):]
+    return folder + name + "_" + plt_type + "_" + date_time + file_type
