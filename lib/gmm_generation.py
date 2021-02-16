@@ -484,6 +484,14 @@ class Gmm:
 def merge_gmms(gmmA, maskA, gmmB, maskB):
     merged_gmm = Gmm()
 
+    if all([gmmA.num_gaussians == 0,
+        gmmB.num_gaussians == 0]):
+        return merged_gmm
+    elif gmmA.num_gaussians == 0:
+        return gmmB.extract_gmm(maskB)
+    elif gmmB.num_gaussians == 0:
+        return gmmA.extract_gmm(maskA)
+
     weightsA = gmmA.weights[maskA].sum()
     weightsB = gmmB.weights[maskB].sum()
     weights_sum = weightsA + weightsB

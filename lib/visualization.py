@@ -235,7 +235,7 @@ def draw_box_plots(data, labels, title = None):
     ax1.boxplot(data, labels = labels, showfliers=False)
     plt.show()
 
-def draw_advanced_box_plots(data, labels, x_axis, title = None, path = None, show = True):
+def draw_advanced_box_plots(data, labels, x_axis, xlabel = 'prior corruption (fraction of corrupted points)', ylabel = 'points within 2 sigma',title = None, path = None, show = True):
     # source: https://stackoverflow.com/questions/16592222/matplotlib-group-boxplots
 
     data_a = data[:, :, 0].tolist()
@@ -271,8 +271,8 @@ def draw_advanced_box_plots(data, labels, x_axis, title = None, path = None, sho
     plt.xticks(range(0, len(ticks) * 2, 2), ticks)
     plt.xlim(-2, len(ticks)*2)
     #plt.ylim(0, 8)
-    plt.xlabel('prior corruption (fraction of corrupted points)')
-    plt.ylabel('points within 2 sigma')
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
 
     #plt.tight_layout()
 

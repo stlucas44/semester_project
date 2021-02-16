@@ -97,7 +97,8 @@ def main(params):
                                   sensor_fov = pc_sensor_fov,
                                   #sensor_max_range = 100.0,
                                   angular_resolution = 1.0,
-                                  plot = plot_sensor)
+                                  plot = plot_sensor,
+                                  only_important = True)
 
     view_point_angle = get_vp(rpy)
     # sample it for comparison and update
@@ -156,7 +157,7 @@ def main(params):
     # apply merge with
     print('Compute merge'.center(80,'*'))
 
-    merged_gmm_lists, final_gmm, final_gmm_pair = merge.gmm_merge(
+    final_gmm = merge.gmm_merge(
             prior_gmm,
             measurement_gmm,
             p_crit = 0.05,
@@ -164,21 +165,17 @@ def main(params):
             n_resample = n_resampling,
             plot = plot_match,
             refit_voxel_size = refit_voxel_size,
-            cov_condition = cov_condition_resampling)
+            cov_condition = cov_condition_resampling,
+            return_only_final = True)
 
+    merged_gmm_lists = None
+    final_gmm_pair = None
     # save to file!
     save_to_file(final_gmm, get_file_path(params, "final", ".csv"))
 
 
     if plot_result:
         mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
-        mpl_visualize(*final_gmm_pair, colors = ["g", "r"],
-                      cov_scale = 2.0, show_mean = False,
-                      view_angle = view_point_angle, show_z = False,
-                      title = "final pair")
-    if plot_sensor:
-        mpl_visualize(true_mesh, title = "true mesh")
-        mpl_visualize(prior_mesh, title = "prior mesh")
 
     if plot_subplots:
         mpl_subplots((true_mesh, final_gmm), cov_scale = 2.0,
@@ -207,6 +204,7 @@ def main(params):
     #aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
 
     #print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
+
     plt.close('all')
     return score_true, score_prior, score_merged
 
@@ -221,7 +219,7 @@ if __name__ == "__main__":
                          "cov_condition_resampling" : 0.04,
                          "corruption_percentage" : 0.2
                          }
-    curve_mesh_params = {"path" : curve_file, "aag" : (2.0,5.0), "pc_sensor_fov" : [100, 85],
+    curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [80, 85],
                          "disruption_range" : (1.0, 2.0),
                          "disruption_patch_size" : 1.0,
                          "refit_voxel_size": 0.1,
@@ -239,26 +237,29 @@ if __name__ == "__main__":
                     "corruption_percentage" : 0.2
                     }
 
-    params = bunny_mesh_params
-    #params = curve_mesh_params
-    #params = vicon_params
+    #params_list = [bunny_mesh_params, curve_mesh_params]
+    #params_list = [bunny_mesh_params]
+    params_list = [curve_mesh_params]
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
-    iterations_per_scale = 3
+    iterations_per_scale = 5
     results = np.zeros((len(corruptions), iterations_per_scale, 3))
+    for params in params_list:
+        for (scale_number, corruption_scale) in zip(np.arange(0,len(corruptions)),corruptions):
+            for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
+                print(("Starting on current scale: " + str(corruption_scale) +
+                       " current iteration: " + str(iteration)).center(80,'*'))
+                params["corruption_percentage"] = corruption_scale
+                result = main(params) # result is [1,3]
+                #print("worked again")
+                results[scale_number, iteration] = result
+                gc.collect()
+                #print("results: ", results)
+        labels = ["True", "Prior", "Refined"]
+        draw_advanced_box_plots(results, labels, corruptions,
+                                title = "Evaluation wrt prior quality (n = " + str(iterations_per_scale),
+                                path = get_figure_path(params, "box"),
+                                show = False)
 
-    for (scale_number, corruption_scale) in zip(np.arange(0,len(corruptions)),corruptions):
-        for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
-            print(("Starting on current scale: " + str(corruption_scale) +
-                   " current iteration: " + str(iteration)).center(80,'*'))
-            params["corruption_percentage"] = corruption_scale
-            result = main(params) # result is [1,3]
-            #print("worked again")
-            results[scale_number, iteration] = result
-            gc.collect()
-            #print("results: ", results)
-    labels = ["True", "Prior", "Refined"]
-    draw_advanced_box_plots(results, labels, corruptions,
-                            title = "Evaluation wrt prior quality (n = " + str(iterations_per_scale),
-                            path = get_figure_path(params, "box"),
-                            show = False)
+        print(("finished with" + params['path']).center(100, '*'))
+        gc.collect()

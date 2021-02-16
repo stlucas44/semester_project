@@ -66,7 +66,8 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                               sensor_fov = [180.0, 180.0],
                               sensor_max_range = 100.0,
                               angular_resolution = 1.0,
-                              plot = False):
+                              plot = False,
+                              only_important = False):
     mesh = o3d.io.read_triangle_mesh(path)
     mesh.compute_vertex_normals()
 
@@ -91,10 +92,10 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
 
     sensor_max_range = 3.0 * view_point_dist
 
-    view_point_mesh, occluded_mesh = view_point_crop_by_trace(
+    view_point_mesh = view_point_crop_by_trace(
                                       mesh, pos, rpy, sensor_max_range,
                                       sensor_fov, angular_resolution,
-                                      plot = plot)
+                                      plot = plot, only_important = only_important)
     return view_point_mesh, rpy
 
 def view_point_crop_by_cast(mesh, pos, rpy,
@@ -102,7 +103,8 @@ def view_point_crop_by_cast(mesh, pos, rpy,
                     sensor_fov = [180.0, 180.0],
                     angular_resolution = 1.0,
                     get_pc = False,
-                    plot = False):
+                    plot = False,
+                    only_important = False):
     # cut all occluded triangles
     '''
     Cut all occluded triangles
@@ -121,7 +123,6 @@ def view_point_crop_by_cast(mesh, pos, rpy,
     mesh.compute_triangle_normals()
     mesh.compute_vertex_normals()
 
-    old_mesh = copy.deepcopy(mesh)
     #transform to trimesh
     local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
                                       faces = mesh.triangles,
@@ -172,7 +173,7 @@ def view_point_crop_by_cast(mesh, pos, rpy,
     occluded_mesh.remove_unreferenced_vertices()
 
     if plot:
-        ax = visualization.visualize_mesh(old_mesh)
+        #ax = visualization.visualize_mesh(old_mesh)
         step = 10
         ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
         ax.scatter((ray_centers + rays)[::step,0], (ray_centers + rays)[::step,1],
@@ -187,7 +188,8 @@ def view_point_crop_by_trace(mesh, pos, rpy,
                     sensor_fov = [180.0, 180.0],
                     angular_resolution = 1.0,
                     get_pc = False,
-                    plot = False):
+                    plot = False,
+                    only_important = False):
     # cut all occluded triangles
     '''
     Cut all occluded triangles
@@ -210,8 +212,8 @@ def view_point_crop_by_trace(mesh, pos, rpy,
                                    np.asarray(mesh.triangles))
 
     centroids, a = gmm_generation.get_centroids(py_mesh)
-    occluded_mesh = copy.deepcopy(mesh)
-    old_mesh = copy.deepcopy(mesh)
+    if not only_important:
+        occluded_mesh = copy.deepcopy(mesh)
     extended_mesh = copy.deepcopy(mesh)
 
     # create rays and trace them ray.ray_pyembree--> pyembree for more speed
@@ -257,7 +259,10 @@ def view_point_crop_by_trace(mesh, pos, rpy,
 
     if in_vp_mask.sum == 0:
         print("  no points in view point")
-        return None, occluded_mesh
+        if only_important:
+            return None
+        else:
+            return None, occluded_mesh
 
     local_mesh = trimesh.base.Trimesh(vertices = extended_mesh.vertices,
                                       faces = extended_mesh.triangles,
@@ -284,8 +289,9 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     print("  number of selected triangles: ", np.asarray(mesh.triangles).shape[0],
           " of ", len(anti_mask))
 
-    occluded_mesh.remove_triangles_by_mask(anti_mask)
-    occluded_mesh.remove_unreferenced_vertices()
+    if not only_important:
+        occluded_mesh.remove_triangles_by_mask(anti_mask)
+        occluded_mesh.remove_unreferenced_vertices()
 
     # edge rpy:
 
@@ -301,7 +307,6 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     if plot:
         #ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
         ax = visualization.visualize_mesh(mesh)
-        #ax = visualization.visualize_mesh(old_mesh, ax = ax)
         step = 100
         ax.scatter(pos[0], pos[1], pos[2], s = 10, c = 'r')
 
@@ -323,7 +328,10 @@ def view_point_crop_by_trace(mesh, pos, rpy,
                     [pos[2], pos[2] + r[2]])
         plt.show()
     #TODO (stlucas): keep removed triangles in different mesh
-    return mesh, occluded_mesh
+    if only_important:
+        return mesh
+    else:
+        return mesh, occluded_mesh
 
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(int(n_points))

@@ -9,90 +9,6 @@ import open3d as o3d
 
 from numba import jit, cuda
 
-def view_point_crop(mesh, pos, rpy,
-                    sensor_max_range = 100.0,
-                    sensor_fov = [180.0, 180.0],
-                    angular_resolution = 1.0,
-                    get_pc = False):
-    # cut all occluded triangles
-    '''
-    Cut all occluded triangles
-    Overview:
-    1. Transform to trimesh for better handling
-    2. Create the sensor model based on range, fov and angular resolution
-        --> we assume a front-left-up frame for the sensor fov center
-    3. transform the model to localized pose
-    3. Raycast for each pixel and check which of them intersect first.
-    4. Apply mask to keep the local mesh
-
-    returns the occlusion mesh
-    '''
-
-    #compte classic normals
-    mesh.compute_triangle_normals()
-    mesh.compute_vertex_normals()
-
-    #transform to trimesh
-    local_mesh = trimesh.base.Trimesh(vertices = mesh.vertices,
-                                      faces = mesh.triangles,
-                                      face_normals = mesh.triangle_normals,
-                                      vertex_normals = mesh.vertex_normals)
-
-    # create rays and trace them ray.ray_pyembree--> pyembree for more speed
-    raytracer = trimesh.ray.ray_triangle.RayMeshIntersector(local_mesh)
-    alpha = np.arange(-sensor_fov[0]/2, sensor_fov[0]/2, angular_resolution)
-    beta = np.arange(-sensor_fov[1]/2, sensor_fov[1]/2, angular_resolution)
-    alpha, beta = np.meshgrid(alpha, beta)
-
-    #assuming a front_left_up frame for the camera
-    rays = sensor_max_range * np.array([np.cos(alpha/180.0 * np.pi),
-                               np.sin(alpha/180.0 * np.pi),
-                               np.sin(beta/180.0 * np.pi)])\
-                               .reshape((3, alpha.shape[0]*beta.shape[1]))
-    rays = rays.T
-    ray_centers = np.tile(pos, (rays.shape[0], 1))
-
-    #transform to global frame!
-    r = scipy.spatial.transform.Rotation.from_euler('ZYX', rpy[::-1], degrees=True)
-    rays = r.apply(rays)
-
-    #check intersected triangles and remove dublicates
-    print(" starting ray trace")
-    triangle_index = raytracer.intersects_first(ray_centers, rays)
-    triangle_index = np.delete(triangle_index, np.where(triangle_index == -1))
-    if triangle_index.size == 0:
-        print(" rays do not intersect! mesh outside sensor range")
-        return mesh
-    triangle_index = np.unique(triangle_index)
-
-    #create mask from intersected triangles
-    triangle_range = np.arange(len(mesh.triangles))
-    mask = [element not in triangle_index for element in triangle_range]
-    print("number of hit triangles: ", len(triangle_index),
-          " of ", len(triangle_range))
-
-    anti_mask = [not element for element in mask]
-    #remove the nonvisible parts of the mesh
-    occluded_mesh = copy.deepcopy(mesh)
-
-    mesh.remove_triangles_by_mask(mask)
-    mesh.remove_unreferenced_vertices()
-
-    occluded_mesh.remove_triangles_by_mask(anti_mask)
-    occluded_mesh.remove_unreferenced_vertices()
-
-    plot = False
-    if plot:
-        ax = visualization.visualize_mesh(mesh)
-        step = 10
-        ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
-        ax.scatter((ray_centers + rays)[::step,0], (ray_centers + rays)[::step,1],
-                   (ray_centers + rays)[::step,2], s = 1, c = 'g')
-        plt.show()
-    #TODO (stlucas): keep removed triangles in different mesh
-    return mesh, occluded_mesh
-
-
 def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
     '''
     merging a point cloud with
@@ -155,7 +71,8 @@ def simple_pc_gmm_merge(pc, gmm, min_prob = 1e-3, min_sample_density = []):
 #@jit(target ="cuda")
 def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
               sample_ratio = 1.0, exit_early = False, n_resample = 1e5,
-              plot = False, refit_voxel_size = 0.05, cov_condition = 0.01):
+              plot = False, refit_voxel_size = 0.05, cov_condition = 0.01,
+              return_only_final = False):
     '''
     Assumptions:
     * Sensor sees all objects that are not occluded in its fov
@@ -238,8 +155,6 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
 
     #print(measurement_mask, prior_mask)
 
-    final_mixture_tuple_vis = (measurement_gmm.extract_gmm(measurement_mask_vis),
-                           prior_gmm.extract_gmm(prior_mask_vis))
 
     final_mixture_tuple = (measurement_gmm.extract_gmm(measurement_mask),
                            prior_gmm.extract_gmm(prior_mask))
@@ -256,6 +171,15 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     final_mixture =gmm_generation.merge_gmms(
             resampled_mixture, resampled_mixture_mask,
             measurement_only_mixture, measurement_only_mixture_mask)
+
+    if return_only_final:
+        return final_mixture
+
+    final_mixture_tuple_vis = (measurement_gmm.extract_gmm(measurement_mask_vis),
+                           prior_gmm.extract_gmm(prior_mask_vis))
+
+
+
 
     return matched_mixture_tuples, final_mixture, final_mixture_tuple_vis
 
