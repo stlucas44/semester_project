@@ -64,9 +64,16 @@ def eval_quality_score(gmm, pc_true):
 
 def eval_quality_AIC(gmm, pc_true):
     score = eval_quality_score(gmm, pc_true)
-    AIC = 2 * score -2 * len(gmm.means)
+    AIC = -2 * score  + 2 * len(gmm.means)
     return AIC
 
+def compare_AIC(scores):
+    scores = np.asarray(scores)
+    print(scores)
+    AIC_min = scores.min()
+    print(AIC_min)
+    P = np.exp((AIC_min - scores)/2.0)
+    return P
 
 def eval_quality_mesh(true_mesh, meas_mesh, num_points = 500):
     #pseudo shift

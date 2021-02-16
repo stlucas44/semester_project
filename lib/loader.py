@@ -67,8 +67,15 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                               sensor_max_range = 100.0,
                               angular_resolution = 1.0,
                               plot = False,
-                              only_important = False):
+                              only_important = False,
+                              look_down = False):
     mesh = o3d.io.read_triangle_mesh(path)
+
+    '''
+    if len(mesh.triangles) > 20000:
+        print(" mesh to large, subsampling!")
+        mesh = mesh.simplify_quadric_decimation(target_number_of_triangles=20000)
+    '''
     mesh.compute_vertex_normals()
 
     view_point_index = np.random.randint(0, len(mesh.triangles))
@@ -82,7 +89,12 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
     mesh_center = np.asarray(mesh.vertices).mean(axis = 0)
 
     pos = relative_pos + mesh_point
-    (x, y, z) = mesh_center - pos
+
+    if look_down:
+        (x, y, z) =  -relative_pos
+
+    else:
+        (x, y, z) = mesh_center - pos
 
     yaw = np.rad2deg(np.arctan2(y, x))
     pitch = np.rad2deg(np.arctan2(z, np.sqrt(x**2 + y**2)))
@@ -214,6 +226,7 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     centroids, a = gmm_generation.get_centroids(py_mesh)
     if not only_important:
         occluded_mesh = copy.deepcopy(mesh)
+
     extended_mesh = copy.deepcopy(mesh)
 
     # create rays and trace them ray.ray_pyembree--> pyembree for more speed

@@ -26,6 +26,7 @@ gorner_file = data_folder + "/gorner.off"
 speed = 0 # 0 for high sensor resolution,
 plot_subplots = True
 show_subplots = False
+aic = True
 
 # Single plots:
 plot_sensor = False
@@ -89,6 +90,7 @@ def main(params):
     cov_condition = params["cov_condition"]
     cov_condition_resampling = params["cov_condition_resampling"]
     corruption_percentage = params["corruption_percentage"]
+    look_down = params["look_down"]
 
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
@@ -98,7 +100,8 @@ def main(params):
                                   #sensor_max_range = 100.0,
                                   angular_resolution = 1.0,
                                   plot = plot_sensor,
-                                  only_important = True)
+                                  only_important = True,
+                                  look_down = look_down)
 
     view_point_angle = get_vp(rpy)
     # sample it for comparison and update
@@ -118,6 +121,8 @@ def main(params):
                      path = get_figure_path(params, "measurement"),
                      title = ("measurement pc", "measurement gmm"),
                      show = show_subplots)
+        plt.close('all')
+
     # Free memory
     measurement_pc = None
 
@@ -125,7 +130,11 @@ def main(params):
     # generate gmms
     true_gmm = Gmm()
     #true_gmm.mesh_gmm(true_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_true)
-    true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
+    #true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
+    true_gmm.mesh_hgmm(true_mesh,  min_points = 8,
+                      max_mixtures = 800,
+                      verbose = False,
+                      cov_condition = cov_condition)
     save_to_file(true_gmm, get_file_path(params, "true", ".csv"))
 
 
@@ -152,6 +161,8 @@ def main(params):
                  view_angle = view_point_angle,
                  path = get_figure_path(params, "prior"),
                  title = ("prior mesh", "prior gmm"), show = show_subplots)
+        plt.close('all')
+
 
     #### merge mesh with corrupted point cloud
     # apply merge with
@@ -183,6 +194,7 @@ def main(params):
                  path = get_figure_path(params, "final"),
                  title = ("true_mesh", "final gmm"),
                  show = show_subplots)
+        plt.close('all')
 
     # Free memory:
     prior_mesh = None
@@ -198,14 +210,17 @@ def main(params):
     score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
 
     print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
+    if aic:
+        aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
+        aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
+        aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
 
-    #aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
-    #aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
-    #aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
-
-    #print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
+        print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
+        p_values =  evaluation.compare_AIC([aic_true, aic_prior, aic_merged])
+        print("AIC P values: ", p_values)
 
     plt.close('all')
+
     return score_true, score_prior, score_merged
 
 if __name__ == "__main__":
