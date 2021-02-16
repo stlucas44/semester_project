@@ -95,7 +95,7 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                                       mesh, pos, rpy, sensor_max_range,
                                       sensor_fov, angular_resolution,
                                       plot = plot)
-    return view_point_mesh, pos
+    return view_point_mesh, rpy
 
 def view_point_crop_by_cast(mesh, pos, rpy,
                     sensor_max_range = 100.0,
@@ -328,6 +328,16 @@ def view_point_crop_by_trace(mesh, pos, rpy,
 def sample_points(mesh, n_points = 10000):
     return mesh.sample_points_uniformly(int(n_points))
 
+def get_vp(rpy, offset = [30, 30]):
+    '''
+    phi = np.arctan2(pos[1], pos[0])/ np.pi * 180.0
+    xy = np.sqrt(np.square(pos[0])+ np.square(pos[1]))
+    theta = np.arctan2(pos[2], xy) / np.pi * 180.0
+
+    vp = (phi + offset[0], theta + offset[1])
+    '''
+    vp = (rpy[2] + offset[0], rpy[1] + offset[1])
+    return vp
 
 def get_name(name):
     start = name.rfind("/") + 1

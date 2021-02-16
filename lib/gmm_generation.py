@@ -99,6 +99,10 @@ class Gmm:
 
         print("  starting hgmm_fit with num_points = ", self.num_train_points)
 
+        if self.num_train_points == 0:
+            print("  no points, returning")
+            return
+
         all_points = np.asarray(pc.points)
         init_object = HgmmHelper(all_points, weight = 1.0)
         min_eig_ratio = 50
@@ -273,6 +277,9 @@ class Gmm:
 
         num_triangles = len(init_mesh.triangles)
         print("  starting hgmm_fit with num_points = ", num_triangles)
+        if num_triangles == 0:
+            print("  no triangles, returning")
+            return
 
         if n > num_triangles:
             n = num_triangles - 1
@@ -660,6 +667,24 @@ def save_to_file(gmm, path):
             'precs' : gmm.precs,
             'precs_chol' : gmm.precs_chol}
 
-    with open(path, 'w') as f:
-        data = yaml.dump(dict, f)
+    names = ['mean_0', 'mean_1', 'mean_2','cov00','cov01','cov02','cov11', 'cov12','cov22']
+
+    mean0 = gmm.means[:,0]
+    mean1 = gmm.means[:,1]
+    mean2 = gmm.means[:,2]
+
+    cov00 = gmm.covariances[:,0,0]
+    cov01 = gmm.covariances[:,0,1]
+    cov02 = gmm.covariances[:,0,2]
+    cov11 = gmm.covariances[:,1,1]
+    cov12 = gmm.covariances[:,1,2]
+    cov22 = gmm.covariances[:,2,2]
+
+    data = np.asarray([mean0, mean1, mean2, cov00, cov01, cov02, cov11, cov12, cov22])
+
+    df = pd.DataFrame(data = data.T)
+    df.columns = names
+
+    #df[['cov00', 'cov01', 'cov02', 'cov11', 'cov12', 'cov22']] = gmm.covariances[:]
+    df.to_csv(path)
     return

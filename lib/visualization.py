@@ -15,7 +15,7 @@ def o3d_visualize(*obj):
     obj = [element.compute_vertex_normals() for element in obj]
     o3d.visualization.draw_geometries(obj)
 
-def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.4,
+def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.8,
                   view_angle = None,
                   show_mean = True,
                   path = None,
@@ -134,7 +134,7 @@ def visualize_pc(pc, ax = None, sensor_origin = None,
     max_point_nr = 1000
     samples = np.random.randint(0, len(points), (max_point_nr,))
     ax.scatter(points[samples,0], points[samples,1],
-               points[samples,2], c = c, s =0.5,
+               points[samples,2], c = c, s =0.8,
                alpha = 0.7, label= "point cloud")
     if sensor_origin is not None:
         ax.scatter(sensor_origin[0], sensor_origin[1], sensor_origin[2], c = "b", s = 2.0,
@@ -274,7 +274,11 @@ def draw_advanced_box_plots(data, labels, x_axis, title = None, path = None, sho
     plt.xlabel('prior corruption (fraction of corrupted points)')
     plt.ylabel('points within 2 sigma')
 
-    plt.tight_layout()
+    #plt.tight_layout()
+
+    if title is not None:
+        plt.title(title)
+
     if path is not None:
         plt.savefig(path)
 
