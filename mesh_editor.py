@@ -37,13 +37,16 @@ bunny_mesh_file_large_corr = data_folder + \
 bunny_pc_file = data_folder + "/bunny/data/bun045.ply"
 bunny_pc_file_large = data_folder + "/bunny/data/bun045_large.ply"
 
-spiez_file = data_folder + "/mini_spiez_2/2_densification/3d_mesh/2020_09_17_spiez_simplified_3d_mesh.obj"
+spiez_file = data_folder + "/spiez.obj"
 gorner_file = data_folder + "/gorner.off"
+
+spiez_region = ((-20.0, -30.0), (5.0, 5.0))
+gorner_region = ((0.0, 0.0), (10.0,10.0))
 
 
 
 path = spiez_file
-#path = bunny_mesh_file
+region = spiez_region
 
 def main():
     if gen_cube:
@@ -78,9 +81,10 @@ def main():
         vp = (90.0, 0.0)
         mesh = o3d.io.read_triangle_mesh(path)
         vis.mpl_visualize(mesh, view_angle = vp)
-        mesh = select_local_region(mesh, region_center = [0.0, 0.0], region_radius = [1.0, 1.0], axes = 'xy')
+        mesh = select_local_region(mesh, region, axes = 'xy')
+        #mesh = sub_sample
         vis.mpl_visualize(mesh, alpha = 1.0,  view_angle = vp)
-
+        save_submesh(mesh, path)
     pass
 
 class cubeGenerator():
@@ -208,22 +212,19 @@ def remove_region(mesh, region_center, region):
     pass
 
 
-def subsample_mesh(mesh, n_triangles):
+def subsample_mesh(mesh, n_triangles = 20000):
     mesh = o3d.io.read_triangle_mesh(path)
 
 
     if len(mesh.triangles) > 20000:
         print(" mesh to large, subsampling!")
-        mesh = mesh.simplify_quadric_decimation(target_number_of_triangles=20000)
+        mesh = mesh.simplify_quadric_decimation(target_number_of_triangles=n_triangles)
     mesh.compute_vertex_normals()
 
+    return mesh
 
-    pass
-
-def select_local_region(mesh, region_center = (0.0, 0.0), region_radius = (1.0, 1.0), axes = 'xy'):
-
-    region_center = np.asarray(region_center)
-    region_radius = np.asarray(region_radius)
+def select_local_region(mesh, region_boundaries = ((0.0, 0.0),(1.0, 1.0)), axes = 'xy'):
+    region_boundaries = np.asarray(region_boundaries)
 
     points = np.asarray(mesh.vertices)
     triangles = np.asarray(mesh.triangles)
@@ -239,8 +240,8 @@ def select_local_region(mesh, region_center = (0.0, 0.0), region_radius = (1.0, 
     elif axes == 'xz':
         triangle_points = triangle_points[:,:,[0,2]]
 
-    region_boundaries = (region_center - region_radius, region_center + region_radius)
     in_region_mask = np.zeros((len(triangles),), dtype = bool)
+    print("Region boundaries: ", region_boundaries)
 
     for (i, point_triplet) in enumerate(triangle_points):
         in_region = np.asarray([region_boundaries[0] < point_triplet[0],
@@ -260,6 +261,12 @@ def select_local_region(mesh, region_center = (0.0, 0.0), region_radius = (1.0, 
 
     print("Now ", in_region_mask.sum(), " triangles")
     return mesh
+
+def save_submesh(local_mesh, path):
+    dot_loc = path.find(".")
+    new_path = path[:dot_loc] + "_reduced" + path[dot_loc:]
+
+    o3d.io.write_triangle_mesh(new_path, local_mesh)
 
 if __name__ == "__main__":
     main()

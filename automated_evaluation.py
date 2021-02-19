@@ -221,7 +221,6 @@ def main(params,  aic = False):
         print("AIC P values: ", p_values)
         return ((score_true, score_prior, score_merged), p_values)
 
-
     return score_true, score_prior, score_merged
 
 if __name__ == "__main__":

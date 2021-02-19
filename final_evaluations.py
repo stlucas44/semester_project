@@ -119,6 +119,7 @@ def eval_for_disruption():
                                     title = "AIC Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
                                     path = get_figure_path(params, "aic_box"),
                                     show = False,
+                                    ylabel = "log P"
                                     )
         print(("finished with" + params['path']).center(100, '*'))
         gc.collect()
