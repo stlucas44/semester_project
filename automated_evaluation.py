@@ -26,7 +26,6 @@ gorner_file = data_folder + "/gorner.off"
 speed = 0 # 0 for high sensor resolution,
 plot_subplots = True
 show_subplots = False
-aic = True
 
 # Single plots:
 plot_sensor = False
@@ -79,7 +78,7 @@ view_point_angle =  (80.0, -60.0)
 
 
 
-def main(params):
+def main(params,  aic = False):
 
     path = params['path']
     altitude_above_ground = params['aag']
@@ -210,6 +209,8 @@ def main(params):
     score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
 
     print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
+    plt.close('all')
+
     if aic:
         aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
         aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
@@ -218,8 +219,8 @@ def main(params):
         print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
         p_values =  evaluation.compare_AIC([aic_true, aic_prior, aic_merged])
         print("AIC P values: ", p_values)
+        return ((score_true, score_prior, score_merged), p_values)
 
-    plt.close('all')
 
     return score_true, score_prior, score_merged
 
@@ -231,7 +232,7 @@ if __name__ == "__main__":
                          "disruption_patch_size" : 0.15,
                          "refit_voxel_size" : 0.01,
                          "cov_condition" : 0.02,
-                         "cov_condition_resampling" : 0.04,
+                         "cov_condition_resampling" : 0.02,
                          "corruption_percentage" : 0.2
                          }
     curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [80, 85],

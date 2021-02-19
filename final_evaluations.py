@@ -75,6 +75,7 @@ spiez_params = {"path" : spiez_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100,
                 "look_down" : True
                 }
 
+aic = True
 
 def eval_for_disruption():
 
@@ -89,32 +90,43 @@ def eval_for_disruption():
     corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 5
     results = np.zeros((len(corruptions), iterations_per_scale, 3))
+    if aic:
+        aic_results = np.zeros((len(corruptions), iterations_per_scale, 3))
     for params in params_list:
         for (scale_number, corruption_scale) in zip(np.arange(0,len(corruptions)),corruptions):
             for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
                 print(("Starting on current scale: " + str(corruption_scale) +
                        " current iteration: " + str(iteration)).center(80,'*'))
                 params["corruption_percentage"] = corruption_scale
-                result = main(params) # result is [1,3]
+                if aic:
+                    results[scale_number, iteration], aic_results[scale_number, iteration] = main(params, aic = aic)
+                else:
+                    results[scale_number, iteration] = main(params, aic = aic) # result is [1,3]
+
                 #print("worked again")
-                results[scale_number, iteration] = result
+                gc.collect()
+                #print("results: ", results)
                 gc.collect()
                 #print("results: ", results)
         labels = ["True", "Prior", "Refined"]
         draw_advanced_box_plots(results, labels, corruptions,
-                                title = "Evaluation wrt prior quality (n = " + str(iterations_per_scale),
+                                title = "Maha Evaluation wrt prior mesh quality (n = " + str(iterations_per_scale) + ")",
                                 path = get_figure_path(params, "box"),
                                 show = False)
 
-
-
+        if aic:
+            draw_advanced_box_plots(np.log(aic_results), labels, corruptions,
+                                    title = "AIC Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
+                                    path = get_figure_path(params, "aic_box"),
+                                    show = False,
+                                    )
         print(("finished with" + params['path']).center(100, '*'))
         gc.collect()
 
 
 def eval_for_disruption_distance():
     params_list = [bunny_mesh_params, curve_mesh_params]
-    params = bunny_mesh_params
+    #params = bunny_mesh_params
     #params = curve_mesh_params
     #params = vicon_params
 
@@ -122,15 +134,20 @@ def eval_for_disruption_distance():
 
     iterations_per_scale = 5
     results = np.zeros((len(corruptions), iterations_per_scale, 3))
+    if aic:
+        aic_results = np.zeros((len(corruptions), iterations_per_scale, 3))
     for params in params_list:
         for (distance_number, distance) in zip(np.arange(0,len(distances)),distances):
             for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
                 print(("Starting on current scale: " + str(corruption_scale) +
                        " current iteration: " + str(iteration)).center(80,'*'))
                 params["disruption_range"] = (distances - 0.05, distances + 0.05)
-                result = main(params) # result is [1,3]
+                if aic:
+                    results[distance_number, iteration], aic_results[distance_number, iteration] = main(params, aic = aic)
+                else:
+                    results[distance_number, iteration] = main(params, aic = aic) # result is [1,3]
+
                 #print("worked again")
-                results[distance_number, iteration] = result
                 gc.collect()
                 #print("results: ", results)
         labels = ["True", "Prior", "Refined"]
@@ -139,6 +156,7 @@ def eval_for_disruption_distance():
                                 path = get_figure_path(params, "box"),
                                 show = False,
                                 xlabel = "avg batch offset ")
+
 
 
 
