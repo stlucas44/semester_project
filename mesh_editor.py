@@ -21,7 +21,8 @@ gen_cube = False
 crush_bunny = False
 scale_bunny = False
 crush_random = False
-load_random = True
+load_random = False
+reduce_mesh = True
 
 model_scaling = 10
 
@@ -36,8 +37,13 @@ bunny_mesh_file_large_corr = data_folder + \
 bunny_pc_file = data_folder + "/bunny/data/bun045.ply"
 bunny_pc_file_large = data_folder + "/bunny/data/bun045_large.ply"
 
+spiez_file = data_folder + "/mini_spiez_2/2_densification/3d_mesh/2020_09_17_spiez_simplified_3d_mesh.obj"
+gorner_file = data_folder + "/gorner.off"
 
 
+
+path = spiez_file
+#path = bunny_mesh_file
 
 def main():
     if gen_cube:
@@ -67,6 +73,14 @@ def main():
     if load_random:
         bunny = automated_view_point_mesh(bunny_mesh_file_large, sensor_max_range = 3.0)
         vis.mpl_visualize(bunny)
+
+    if subsample_mesh:
+        vp = (90.0, 0.0)
+        mesh = o3d.io.read_triangle_mesh(path)
+        vis.mpl_visualize(mesh, view_angle = vp)
+        mesh = select_local_region(mesh, region_center = [0.0, 0.0], region_radius = [1.0, 1.0], axes = 'xy')
+        vis.mpl_visualize(mesh, alpha = 1.0,  view_angle = vp)
+
     pass
 
 class cubeGenerator():
@@ -105,7 +119,7 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
                              offset_range = (-0.5,0.5),
                              max_batch_area = 0.3,
                              check_intersection = False,
-                             smooth = 0,
+                             smoothness = 0.0,
                              verbose = False):
 
 
@@ -125,6 +139,7 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
     faces = np.asarray(new_mesh.triangles)
     overall_neighboring_index = np.empty((0,))
     #print(local_points_index[:10])
+    iterations = 0
     for i in np.arange(0, n_max):
         init_index = [np.random.randint(0, len(mesh.vertices))]
         expected_size = np.random.uniform(low = 0, high = max_batch_area)
@@ -134,7 +149,7 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
         if verbose: print("init_index before start: ", init_index)
         for j in np.arange(0, n_max):
             neighboring_mask = [any(elem in init_index for elem in line) for line in faces]
-            neighboring_vertices = [i for i, x in enumerate(neighboring_mask) if x]
+            neighboring_vertices = [k for k, x in enumerate(neighboring_mask) if x]
 
             neighboring_index = np.asarray(faces[neighboring_mask]).reshape(-1,1)
             neighboring_index = np.unique(neighboring_index)
@@ -154,11 +169,18 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
         offset = np.asarray(mesh.vertex_normals)[init_index[0]] * offset_length
         #print("  mesh pertubed by ", offset_length)
 
+        #print(np.asarray(init_index).shape)
+        #print(points.shape)
+        #dist = [points[init_index[0]] - points[init_index[:]]]
+        #print(dist[1:20])
+        #offset_weight = np.linalg.norm(dist, axis = 1)
 
         points[mask, :] = points[mask, :] + np.asarray(offset)
 
         overall_neighboring_index = np.concatenate((overall_neighboring_index, neighboring_index))
         if verbose: print("  corrupted vertex precentage: ", len(overall_neighboring_index)/len(mask))
+
+        iterations = i
         if len(overall_neighboring_index)/len(mask) > corruption_percentage:
             print("exited by corruption percentage")
             break
@@ -179,11 +201,65 @@ def corrupt_region_connected(mesh, corruption_percentage = 0.1,
     elif self_intersection:
         print("selfintersection!!")
 
-    return new_mesh
+    return new_mesh, iterations
 
 def remove_region(mesh, region_center, region):
     print("implement REMOVE REGION!")
     pass
+
+
+def subsample_mesh(mesh, n_triangles):
+    mesh = o3d.io.read_triangle_mesh(path)
+
+
+    if len(mesh.triangles) > 20000:
+        print(" mesh to large, subsampling!")
+        mesh = mesh.simplify_quadric_decimation(target_number_of_triangles=20000)
+    mesh.compute_vertex_normals()
+
+
+    pass
+
+def select_local_region(mesh, region_center = (0.0, 0.0), region_radius = (1.0, 1.0), axes = 'xy'):
+
+    region_center = np.asarray(region_center)
+    region_radius = np.asarray(region_radius)
+
+    points = np.asarray(mesh.vertices)
+    triangles = np.asarray(mesh.triangles)
+
+    triangle_points = points[triangles]
+
+    print(triangle_points.shape)
+
+    if axes == 'xy':
+        triangle_points = triangle_points[:,:,[0,1]]
+    elif axes == 'yz':
+        triangle_points = triangle_points[:,:,[1,2]]
+    elif axes == 'xz':
+        triangle_points = triangle_points[:,:,[0,2]]
+
+    region_boundaries = (region_center - region_radius, region_center + region_radius)
+    in_region_mask = np.zeros((len(triangles),), dtype = bool)
+
+    for (i, point_triplet) in enumerate(triangle_points):
+        in_region = np.asarray([region_boundaries[0] < point_triplet[0],
+                    point_triplet[0] < region_boundaries[1],
+                    region_boundaries[0]< point_triplet[1],
+                    point_triplet[1] < region_boundaries[1],
+                    region_boundaries[0]< point_triplet[2],
+                    point_triplet[2] < region_boundaries[1]])
+        in_region = in_region.reshape((-1,))
+        in_region_mask[i] = in_region.all()
+        #print(in_region.all())
+
+    not_in_region_mask = [not x for x in in_region_mask]
+
+    mesh.remove_triangles_by_mask(not_in_region_mask)
+    mesh.remove_unreferenced_vertices()
+
+    print("Now ", in_region_mask.sum(), " triangles")
+    return mesh
 
 if __name__ == "__main__":
     main()
