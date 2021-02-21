@@ -6,12 +6,12 @@ import gc
 #paths:
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
-bunny_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
+bunny_file = data_folder + "/bunny.ply"
 vicon_file = data_folder + "/vicon.stl"
 curve_file = data_folder + "/curve.off"
-rhone_file =  data_folder + "/rhone_enu.off"
-gorner_file = data_folder + "/gorner.off"
-spiez_file = data_folder + "/mini_spiez_2/2_densification/3d_mesh/2020_09_17_spiez_simplified_3d_mesh.obj"
+rhone_file =  data_folder + "/rhone_enu_reduced.off"
+huenli_file = data_folder + "/gorner.off"
+spiez_file = data_folder + "/spiez_reduced.obj"
 
 
 #settings:
@@ -26,7 +26,7 @@ bunny_mesh_params = {"path" : bunny_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : 
                      }
 
 curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [80, 85],
-                     "disruption_range" : (1.0, 2.0),
+                     "disruption_range" : (0.5, 2.0),
                      "disruption_patch_size" : 1.0,
                      "refit_voxel_size": 0.1,
                      "cov_condition" : 0.1,
@@ -45,7 +45,7 @@ vicon_params = {"path" : vicon_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100,
                 "look_down" : True
                 }
 
-gorner_params = {"path" : gorner_file, "aag" : (2.0, 4.0), "pc_sensor_fov" : [100, 85],
+huenli_params = {"path" : huenli_file, "aag" : (2.0, 4.0), "pc_sensor_fov" : [100, 85],
                 "disruption_range" : (0.5, 2.0),
                 "disruption_patch_size" : 0.5,
                 "refit_voxel_size": 0.1,
@@ -55,35 +55,36 @@ gorner_params = {"path" : gorner_file, "aag" : (2.0, 4.0), "pc_sensor_fov" : [10
                 "look_down" : True
                 }
 
-rhone_params = {"path" : rhone_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100, 85],
+rhone_params = {"path" : rhone_file, "aag" : (40.0, 80.0), "pc_sensor_fov" : [100, 85],
                 "disruption_range" : (0.5, 2.0),
                 "disruption_patch_size" : 0.5,
-                "refit_voxel_size": 0.05,
-                "cov_condition" : 0.05,
-                "cov_condition_resampling" : 0.1,
+                "refit_voxel_size": 0.1,
+                "cov_condition" : 0.5,
+                "cov_condition_resampling" : 0.8,
                 "corruption_percentage" : 0.2,
                 "look_down" : True
                 }
 
-spiez_params = {"path" : spiez_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100, 85],
+spiez_params = {"path" : spiez_file, "aag" : (0.5, 1.0), "pc_sensor_fov" : [100, 85],
                 "disruption_range" : (0.5, 2.0),
-                "disruption_patch_size" : 0.5,
+                "disruption_patch_size" : 0.8,
                 "refit_voxel_size": 0.05,
-                "cov_condition" : 0.05,
-                "cov_condition_resampling" : 0.1,
+                "cov_condition" : 0.2,
+                "cov_condition_resampling" : 0.3,
                 "corruption_percentage" : 0.2,
-                "look_down" : True
+                "look_down" : False
                 }
 
-aic = True
+aic = False
 
 def eval_for_disruption():
 
-    params_list = [bunny_mesh_params, curve_mesh_params]
-    #params_list = [gorner_params]
-    #params_list = [spiez_file]
-    #params_list = [rohne_params]
-
+    #params_list = [bunny_mesh_params, curve_mesh_params]
+    #params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
+    #params_list = [huenli_params]
+    #params_list = [spiez_params]
+    params_list = [rhone_params]
+    #params_list = [bunny_mesh_params]
     #params_list = [curve_mesh_params]
 
 
@@ -106,17 +107,17 @@ def eval_for_disruption():
                 #print("worked again")
                 gc.collect()
                 #print("results: ", results)
-                gc.collect()
-                #print("results: ", results)
         labels = ["True", "Prior", "Refined"]
         draw_advanced_box_plots(results, labels, corruptions,
-                                title = "Maha Evaluation wrt prior mesh quality (n = " + str(iterations_per_scale) + ")",
+                                title = get_name(params['path']) +
+                                "\n Maha Evaluation wrt prior mesh quality (n = " + str(iterations_per_scale) + ")",
                                 path = get_figure_path(params, "box"),
                                 show = False)
 
         if aic:
             draw_advanced_box_plots(np.log(aic_results), labels, corruptions,
-                                    title = "AIC Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
+                                    title = get_name(params['path']) +
+                                    "\n AIC Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
                                     path = get_figure_path(params, "aic_box"),
                                     show = False,
                                     ylabel = "log P"
@@ -153,7 +154,8 @@ def eval_for_disruption_distance():
                 #print("results: ", results)
         labels = ["True", "Prior", "Refined"]
         draw_advanced_box_plots(results, labels, distances,
-                                title = "Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
+                                title = get_name(params['path']) +
+                                "\n Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
                                 path = get_figure_path(params, "box"),
                                 show = False,
                                 xlabel = "avg batch offset ")

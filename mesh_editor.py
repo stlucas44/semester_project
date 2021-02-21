@@ -38,15 +38,18 @@ bunny_pc_file = data_folder + "/bunny/data/bun045.ply"
 bunny_pc_file_large = data_folder + "/bunny/data/bun045_large.ply"
 
 spiez_file = data_folder + "/spiez.obj"
-gorner_file = data_folder + "/gorner.off"
+rhone_file = data_folder + "/rhone_enu.off"
+huenliwald_file = data_folder + "/huenliwald.off"
+bunny_file = data_folder +  "/bunny.ply"
+
 
 spiez_region = ((-20.0, -30.0), (5.0, 5.0))
-gorner_region = ((0.0, 0.0), (10.0,10.0))
+rohne_region = ((200.0, -250.0), (350.0,-50.0))
+huenliwald_region = ((0.0, 0.0), (100.0, 100.0))
 
 
-
-path = spiez_file
-region = spiez_region
+path = bunny_file
+region = huenliwald_file
 
 def main():
     if gen_cube:
@@ -262,9 +265,9 @@ def select_local_region(mesh, region_boundaries = ((0.0, 0.0),(1.0, 1.0)), axes 
     print("Now ", in_region_mask.sum(), " triangles")
     return mesh
 
-def save_submesh(local_mesh, path):
+def save_submesh(local_mesh, path, key_word = "_reduced"):
     dot_loc = path.find(".")
-    new_path = path[:dot_loc] + "_reduced" + path[dot_loc:]
+    new_path = path[:dot_loc] + key_word + path[dot_loc:]
 
     o3d.io.write_triangle_mesh(new_path, local_mesh)
 

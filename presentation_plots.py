@@ -12,24 +12,14 @@ from lib.loader import *
 from lib.visualization import *
 
 from mesh_editor import corrupt_region_connected
-
-#files
-home = expanduser("~")
-data_folder = home + "/semester_project/data"
-bunny_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
-vicon_file = data_folder + "/vicon.stl"
-curve_file = data_folder + "/curve.off"
-rone_file =  data_folder + "/rhone_enu.off"
-gorner_file = data_folder + "/gorner.off"
-
 # settings:
 speed = 0 # 0 for high sensor resolution,
 plot_subplots = True
-show_subplots = False
+show_subplots = True
 
 # Single plots:
-plot_sensor = False
-plot_match = True
+plot_sensor = True
+plot_match = False
 plot_result = False
 
 
@@ -44,28 +34,74 @@ if speed == 0:
     n_pc_measurement = 1e5
     n_resampling = int(1e5)
 
-if speed == 1:
-    pc_sensor_position_enu = [0.0, 1.0, 2.0]
-    pc_sensor_rpy = [0.0, 90.0, 90.0]
-    pc_sensor_fov = [100, 85]
-    pc_range = 6.0
-    pc_angular_resolution = 3 # pico (354x287) would be 3.5 (res/fov)
-    n_pc_true = 1e4
-    n_pc_measurement = 1e3
-    n_resampling = 1e4
+# goal: plot nice gmm for bunny, curve, spiez and rohne
+# define sensor positions
+vp_bunny = (0.0, 1.0, 2.0)
+vp_curve = (30.0, -5.0, 0.0)
+vp_spiez = (5.0, 5.0, -30.0)
+vp_rhone = (200.0, -150.0, 40.0)
 
 
-if speed == 2:
-    pc_sensor_position_enu = [0.0, 1.0, 2.0]
-    pc_sensor_rpy = [0.0, 90.0, 90.0]
-    pc_sensor_fov = [100, 85]
-    pc_range = 6.0
-    pc_angular_resolution = 5 # pico (354x287) would be 3.5 (res/fov)
-    n_pc_true = 1e4
-    n_pc_measurement = 1e3
-    n_resampling = 1e3
+# define paths
+#paths:
+home = expanduser("~")
+data_folder = home + "/semester_project/data"
+bunny_file = data_folder + "/bunny.ply"
+vicon_file = data_folder + "/vicon.stl"
+curve_file = data_folder + "/curve.off"
+rhone_file =  data_folder + "/rhone_enu_reduced.off"
+huenli_file = data_folder + "/gorner.off"
+spiez_file = data_folder + "/spiez_reduced.obj"
 
 
+#settings:
+bunny_mesh_params = {"path" : bunny_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
+                     "disruption_range" : (0.0, 0.5),
+                     "disruption_patch_size" : 0.15,
+                     "refit_voxel_size" : 0.01,
+                     "cov_condition" : 0.02,
+                     "cov_condition_resampling" : 0.04,
+                     "corruption_percentage" : 0.2,
+                     "look_down" : False
+                     }
+
+curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [80, 85],
+                     "disruption_range" : (0.5, 2.0),
+                     "disruption_patch_size" : 1.0,
+                     "refit_voxel_size": 0.1,
+                     "cov_condition" : 0.1,
+                     "cov_condition_resampling" : 0.15,
+                     "corruption_percentage" : 0.2,
+                     "look_down" : True
+                     }
+
+rhone_params = {"path" : rhone_file, "aag" : (50.0, 100.0), "pc_sensor_fov" : [100, 85],
+                "disruption_range" : (0.5, 2.0),
+                "disruption_patch_size" : 0.5,
+                "refit_voxel_size": 0.05,
+                "cov_condition" : 0.05,
+                "cov_condition_resampling" : 0.1,
+                "corruption_percentage" : 0.2,
+                "look_down" : True
+                }
+
+spiez_params = {"path" : spiez_file, "aag" : (0.5, 1.0), "pc_sensor_fov" : [100, 85],
+                "disruption_range" : (0.5, 2.0),
+                "disruption_patch_size" : 0.8,
+                "refit_voxel_size": 0.05,
+                "cov_condition" : 0.2,
+                "cov_condition_resampling" : 0.3,
+                "corruption_percentage" : 0.2,
+                "look_down" : False
+                }
+
+aic = False
+
+
+
+# vp
+#view_point_angle =  (45.0, 45.0)
+view_point_angle =  (0.0, 0.0)
 
 #precomputed gmms:
 recompute_items = True
@@ -73,12 +109,8 @@ tmp_gmm_true = data_folder + "/tmp/tmp_measurement_gmm"
 tmp_gmm_true_pc = data_folder + "/tmp/tmp_measurement_gmm_pc"
 tmp_gmm_prior = data_folder + "/tmp/tmp_mesh_gmm"
 
-#view point for visualization
-view_point_angle =  (80.0, -60.0)
 
-
-
-def main(params,  aic = False):
+def main(params,  aic = False, vp = None):
 
     path = params['path']
     altitude_above_ground = params['aag']
@@ -91,8 +123,11 @@ def main(params,  aic = False):
     corruption_percentage = params["corruption_percentage"]
     look_down = params["look_down"]
 
+
+
     #### true mesh
     print('Prepare true mesh and pc'.center(80,'*'))
+
     # load true mesh
     true_mesh, rpy = automated_view_point_mesh(path, altitude_above_ground = altitude_above_ground,
                                   sensor_fov = pc_sensor_fov,
@@ -100,16 +135,19 @@ def main(params,  aic = False):
                                   angular_resolution = 1.0,
                                   plot = plot_sensor,
                                   only_important = True,
-                                  look_down = look_down)
-
-    view_point_angle = get_vp(rpy)
+                                  look_down = look_down,
+                                  vp = vp)
+    if vp is not None:
+        view_point_angle = get_vp(rpy, offset = vp)
+    else:
+        view_point_angle = get_vp(rpy)
     # sample it for comparison and update
     measurement_pc = sample_points(true_mesh, n_points = n_pc_measurement)
 
     measurement_gmm = Gmm()
     measurement_gmm.pc_hgmm(measurement_pc, recompute = recompute_items, path = tmp_gmm_true_pc,
                             min_points = 500, cov_condition = cov_condition)
-    save_to_file(measurement_gmm, get_file_path(params, "measurement", ".csv"))
+    #save_to_file(measurement_gmm, get_file_path(params, "measurement", ".csv"))
 
 
 
@@ -117,7 +155,7 @@ def main(params,  aic = False):
     if plot_subplots:
         mpl_subplots((measurement_pc, measurement_gmm), cov_scale = 2.0,
                      view_angle = view_point_angle,
-                     path = get_figure_path(params, "measurement"),
+                     path = get_figure_path(params, "measurement", folder = "imgs/presentation_plots/"),
                      title = ("measurement pc", "measurement gmm"),
                      show = show_subplots)
         plt.close('all')
@@ -146,7 +184,7 @@ def main(params,  aic = False):
     if plot_subplots:
         mpl_subplots((prior_mesh, prior_gmm), cov_scale = 2.0,
                  view_angle = view_point_angle,
-                 path = get_figure_path(params, "prior"),
+                 path = get_figure_path(params, "prior", folder = "imgs/presentation_plots/"),
                  title = ("prior mesh", "prior gmm"), show = show_subplots)
         plt.close('all')
 
@@ -169,7 +207,7 @@ def main(params,  aic = False):
     merged_gmm_lists = None
     final_gmm_pair = None
     # save to file!
-    save_to_file(final_gmm, get_file_path(params, "final", ".csv"))
+    #save_to_file(final_gmm, get_file_path(params, "final", ".csv"))
 
 
     if plot_result:
@@ -178,7 +216,7 @@ def main(params,  aic = False):
     if plot_subplots:
         mpl_subplots((true_mesh, final_gmm), cov_scale = 2.0,
                  view_angle = view_point_angle,
-                 path = get_figure_path(params, "final"),
+                 path = get_figure_path(params, "final", folder = "imgs/presentation_plots/"),
                  title = ("true_mesh", "final gmm"),
                  show = show_subplots)
         plt.close('all')
@@ -190,22 +228,16 @@ def main(params,  aic = False):
     # score the corrupted gmm with sampled mesh
     print('Starting scoring'.center(80,'*'))
     true_pc = sample_points(true_mesh, n_points = n_pc_true) #n_pc_true)
-
-    score_prior = evaluation.eval_quality_maha(prior_gmm, true_pc)
-    score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
-
     # generate gmms
     true_gmm = Gmm()
     #true_gmm.mesh_gmm(true_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_true)
-    #true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
-    true_gmm.mesh_hgmm(true_mesh,  min_points = 8,
-                      max_mixtures = 800,
-                      verbose = False,
-                      cov_condition = cov_condition)
-    save_to_file(true_gmm, get_file_path(params, "true", ".csv"))
+    true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
+    #save_to_file(true_gmm, get_file_path(params, "true", ".csv"))
 
 
     score_true = evaluation.eval_quality_maha(true_gmm, true_pc)
+    score_prior = evaluation.eval_quality_maha(prior_gmm, true_pc)
+    score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
 
     print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
     plt.close('all')
@@ -226,58 +258,11 @@ def main(params,  aic = False):
 
     return score_true, score_prior, score_merged
 
+
 if __name__ == "__main__":
-
     #settings:
-    bunny_mesh_params = {"path" : bunny_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
-                         "disruption_range" : (0.0, 0.5),
-                         "disruption_patch_size" : 0.15,
-                         "refit_voxel_size" : 0.01,
-                         "cov_condition" : 0.02,
-                         "cov_condition_resampling" : 0.02,
-                         "corruption_percentage" : 0.2
-                         }
-    curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [80, 85],
-                         "disruption_range" : (1.0, 2.0),
-                         "disruption_patch_size" : 1.0,
-                         "refit_voxel_size": 0.1,
-                         "cov_condition" : 0.1,
-                         "cov_condition_resampling" : 0.15,
-                         "corruption_percentage" : 0.2
-                         }
-
-    vicon_params = {"path" : vicon_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100, 85],
-                    "disruption_range" : (0.5, 2.0),
-                    "disruption_patch_size" : 0.5,
-                    "refit_voxel_size": 0.05,
-                    "cov_condition" : 0.05,
-                    "cov_condition_resampling" : 0.1,
-                    "corruption_percentage" : 0.2
-                    }
-
-    #params_list = [bunny_mesh_params, curve_mesh_params]
-    #params_list = [bunny_mesh_params]
-    params_list = [curve_mesh_params]
-
-    corruptions = [0.05, 0.1, 0.2, 0.4]
-    iterations_per_scale = 5
-    results = np.zeros((len(corruptions), iterations_per_scale, 3))
-    for params in params_list:
-        for (scale_number, corruption_scale) in zip(np.arange(0,len(corruptions)),corruptions):
-            for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
-                print(("Starting on current scale: " + str(corruption_scale) +
-                       " current iteration: " + str(iteration)).center(80,'*'))
-                params["corruption_percentage"] = corruption_scale
-                result = main(params) # result is [1,3]
-                #print("worked again")
-                results[scale_number, iteration] = result
-                gc.collect()
-                #print("results: ", results)
-        labels = ["True", "Prior", "Refined"]
-        draw_advanced_box_plots(results, labels, corruptions,
-                                title = "Evaluation wrt prior quality (n = " + str(iterations_per_scale),
-                                path = get_figure_path(params, "box"),
-                                show = False)
-
-        print(("finished with" + params['path']).center(100, '*'))
-        gc.collect()
+    vps = [vp_bunny, vp_curve, vp_rhone, vp_spiez]
+    param_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
+    for (param, vp) in zip(param_list, vps):
+        print("inserting: ", param, vp)
+        main(param, vp = vp)

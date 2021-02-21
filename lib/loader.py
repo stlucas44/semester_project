@@ -68,9 +68,10 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
                               angular_resolution = 1.0,
                               plot = False,
                               only_important = False,
-                              look_down = False):
+                              look_down = False,
+                              vp = None):
     mesh = o3d.io.read_triangle_mesh(path)
-
+    print("loading with vp = ", vp)
     '''
     if len(mesh.triangles) > 20000:
         print(" mesh to large, subsampling!")
@@ -78,17 +79,23 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
     '''
     mesh.compute_vertex_normals()
 
-    view_point_index = np.random.randint(0, len(mesh.triangles))
-    view_point_dist = np.random.uniform(low = altitude_above_ground[0],
-                                        high = altitude_above_ground[1])
-
-    vertice_indexes = np.asarray(mesh.triangles[view_point_index])
-    mesh_point = np.asarray(mesh.vertices[vertice_indexes[0]])
-
-    relative_pos = view_point_dist * np.asarray(mesh.triangle_normals[view_point_index])
     mesh_center = np.asarray(mesh.vertices).mean(axis = 0)
 
-    pos = relative_pos + mesh_point
+    if vp is None:
+        view_point_index = np.random.randint(0, len(mesh.triangles))
+        view_point_dist = np.random.uniform(low = altitude_above_ground[0],
+                                            high = altitude_above_ground[1])
+
+        vertice_indexes = np.asarray(mesh.triangles[view_point_index])
+        mesh_point = np.asarray(mesh.vertices[vertice_indexes[0]])
+
+        relative_pos = view_point_dist * np.asarray(mesh.triangle_normals[view_point_index])
+
+        pos = relative_pos + mesh_point
+    else:
+        mesh_center = np.asarray(mesh.vertices).mean(axis = 0)
+        pos = vp
+        view_point_dist = np.linalg.norm(mesh_center - pos)
 
     if look_down:
         (x, y, z) =  -relative_pos
@@ -307,7 +314,6 @@ def view_point_crop_by_trace(mesh, pos, rpy,
         occluded_mesh.remove_unreferenced_vertices()
 
     # edge rpy:
-
     rpy_b0 = (0.0, vp_bounds_pitch[0], vp_bounds_yaw[0])
     rpy_b1 = (0.0, vp_bounds_pitch[1], vp_bounds_yaw[0])
     rpy_b2 = (0.0, vp_bounds_pitch[0], vp_bounds_yaw[1])
@@ -365,8 +371,7 @@ def get_name(name):
     end = name.rfind(".")
     return name[start:end]
 
-def get_figure_path(params, plt_type):
-    folder = "imgs/"
+def get_figure_path(params, plt_type, folder = "imgs/"):
     name = get_name(params['path'])
     date_time = datetime.today().strftime('%Y-%m-%d-%H:%M:%S')
     date_time = date_time[:date_time.rfind(":")]

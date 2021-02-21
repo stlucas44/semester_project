@@ -219,11 +219,11 @@ def visualize_match_matrix(match, score):
     ax[0].set_title('accepted t tests')
 
     intensity_cm = plt.get_cmap("autumn")
-    print(" scaling the colormap to ", np.max(score))
+    print(" scaling the colormap to ", np.round(np.max(score), 3))
     ax[1].imshow(score, cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
     ax[1].set_xlabel('measurement gmms (item numbers)')
     ax[1].set_ylabel('mesh gmms (item numbers)')
-    ax[1].set_title("intersection heat map, p_max = " + str(np.max(score)))
+    ax[1].set_title("intersection heat map, p_max = " + str(np.round(np.max(score), 3)))
     plt.show()
 
 def draw_box_plots(data, labels, title = None):
