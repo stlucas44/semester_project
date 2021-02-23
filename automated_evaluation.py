@@ -29,7 +29,7 @@ show_subplots = False
 
 # Single plots:
 plot_sensor = False
-plot_match = True
+plot_match = False
 plot_result = False
 
 

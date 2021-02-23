@@ -56,7 +56,7 @@ huenli_params = {"path" : huenli_file, "aag" : (2.0, 4.0), "pc_sensor_fov" : [10
                 }
 
 rhone_params = {"path" : rhone_file, "aag" : (40.0, 60.0), "pc_sensor_fov" : [100, 85],
-                "disruption_range" : (0.5, 2.0),
+                "disruption_range" : (0.5, 5.0),
                 "disruption_patch_size" : 0.5,
                 "refit_voxel_size": 0.1,
                 "cov_condition" : 0.5,
@@ -65,7 +65,7 @@ rhone_params = {"path" : rhone_file, "aag" : (40.0, 60.0), "pc_sensor_fov" : [10
                 "look_down" : True
                 }
 
-spiez_params = {"path" : spiez_file, "aag" : (0.5, 1.0), "pc_sensor_fov" : [100, 85],
+spiez_params = {"path" : spiez_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100, 85],
                 "disruption_range" : (0.5, 2.0),
                 "disruption_patch_size" : 0.8,
                 "refit_voxel_size": 0.05,

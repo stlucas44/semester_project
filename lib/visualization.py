@@ -264,15 +264,15 @@ def draw_advanced_box_plots(data, labels, x_axis, xlabel = 'prior corruption (fr
     bpm = plt.boxplot(data_b, positions=np.array(range(len(data_b)))*2, sym='', widths=0.3)
     bpr = plt.boxplot(data_c, positions=np.array(range(len(data_c)))*2+0.4, sym='', widths=0.3)
 
-    set_box_color(bpl, '#A9A9A9')
-    set_box_color(bpm, '#D7191C') # colors are from http://colorbrewer2.org/
-    set_box_color(bpr, '#2C7BB6')
+    set_box_color(bpl, 'b')
+    set_box_color(bpm, 'r') # colors are from http://colorbrewer2.org/
+    set_box_color(bpr, 'g')
 
 
     # draw temporary red and blue lines and use them to create a legend
-    plt.plot([], c='#A9A9A9', label='True') #labels[0]
-    plt.plot([], c='#D7191C', label='Prior') #labels[1]
-    plt.plot([], c='#2C7BB6', label='Refined') #labels[2]
+    plt.plot([], c='b', label='Ground truth') #labels[0]
+    plt.plot([], c='r', label='Prior') #labels[1]
+    plt.plot([], c='g', label='Refined') #labels[2]
     plt.legend()
 
     plt.xticks(range(0, len(ticks) * 2, 2), ticks)

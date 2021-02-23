@@ -19,7 +19,7 @@ show_subplots = True
 
 # Single plots:
 plot_sensor = False
-plot_match = True
+plot_match = False
 plot_result = True
 
 
@@ -39,7 +39,7 @@ if speed == 0:
 vp_bunny = (1.0, 2.0, 10.0) # (1.0, 2.0, 1.0) best so far
 vp_vis_bunny = (90.0, -90.0)
 vp_curve = (35.0, -3.0, 0.0)
-vp_vis_curve = (45.0, -10.0)
+vp_vis_curve = (30.0, -10.0)
 vp_spiez = (5.0, 5.0, -18.0)
 vp_vis_spiez = (60.0, 0.0)
 vp_rhone = (200.0, -150.0, 40.0)
@@ -74,7 +74,7 @@ curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [
                      "disruption_patch_size" : 1.0,
                      "refit_voxel_size": 0.1,
                      "cov_condition" : 0.1,
-                     "cov_condition_resampling" : 0.15,
+                     "cov_condition_resampling" : 0.1,
                      "corruption_percentage" : 0.2,
                      "look_down" : False
                      }
@@ -149,7 +149,6 @@ def main(params,  aic = False, vp = None, vp_vis = None):
     else:
         view_point_angle = get_vp(rpy)
 
-        
     # sample it for comparison and update
     measurement_pc = sample_points(true_mesh, n_points = n_pc_measurement)
     #o3d_visualize(measurement_pc, mesh = False)
@@ -183,6 +182,18 @@ def main(params,  aic = False, vp = None, vp_vis = None):
                                  n_max = 10,
                                  offset_range = disuption_range,
                                  max_batch_area = disruption_patch_size)
+
+    if plot_subplots:
+        #visualization.o3d_visualize(true_mesh)
+        #visualization.o3d_visualize(prior_mesh)
+
+        mpl_subplots((true_mesh, prior_mesh), cov_scale = 2.0,
+                     view_angle = view_point_angle,
+                     path = get_figure_path(params, "mesh_compare", folder = "imgs/presentation_plots/"),
+                     title = ("true_mesh", "prior_mesh"),
+                     show = show_subplots,
+                     show_z = False)
+        plt.close('all')
 
     # generate gmm from prior
     prior_gmm = Gmm()
