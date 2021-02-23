@@ -44,12 +44,12 @@ bunny_file = data_folder +  "/bunny.ply"
 
 
 spiez_region = ((-20.0, -30.0), (5.0, 5.0))
-rohne_region = ((200.0, -250.0), (350.0,-50.0))
+rhone_region = ((200.0, -250.0), (350.0,-100.0))
 huenliwald_region = ((0.0, 0.0), (100.0, 100.0))
 
 
-path = bunny_file
-region = huenliwald_file
+path = spiez_file
+region = spiez_region
 
 def main():
     if gen_cube:

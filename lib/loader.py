@@ -26,7 +26,7 @@ def load_unit_mesh(type = 'flat'):
 
     if type == 'flat':
         vertices = np.asarray([[0.0, 0.0, 0.0],
-                               [10.0, 0.0, 0.0],
+                               [1.0, 0.0, 0.0],
                                [0.0, 1.0, 0.0]])
         triangles = [[0.0,1.0,2.0]]
 
@@ -50,6 +50,13 @@ def load_unit_mesh(type = 'flat'):
                                [1.0, 1.0, 0.0]])
         triangles = [[0.0, 1.0, 2.0],
                      [0.0, 2.0, 3.0]]
+    elif type == "square":
+        vertices = np.asarray([[0.0, 0.0, 0.0],
+                               [1.0, 0.0, 0.0],
+                               [0.0, 1.0, 0.0],
+                               [1.0, 1.0, 0.0]])
+        triangles = [[0.0, 1.0, 2.0],
+                     [1.0, 2.0, 3.0]]
 
 
     mesh.vertices = o3d.utility.Vector3dVector(vertices)
@@ -93,7 +100,6 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
 
         pos = relative_pos + mesh_point
     else:
-        mesh_center = np.asarray(mesh.vertices).mean(axis = 0)
         pos = vp
         view_point_dist = np.linalg.norm(mesh_center - pos)
 
@@ -292,6 +298,7 @@ def view_point_crop_by_trace(mesh, pos, rpy,
     rays = rays[in_vp_mask]
     print(" in fov: ", len(centroids), " of ", len(in_vp_mask))
     print(" in extended fov: ", in_vp_mask_extended.sum(), " of ", len(in_vp_mask_extended))
+    #visualization.mpl_visualize(mesh, alpha = 1.0)
 
 
     print("  starting ray trace")
@@ -325,12 +332,12 @@ def view_point_crop_by_trace(mesh, pos, rpy,
 
     if plot:
         #ax.scatter(ray_centers[0,0], ray_centers[0,1], ray_centers[0,2], s = 10, c = 'r')
-        ax = visualization.visualize_mesh(mesh)
+        ax = visualization.visualize_mesh(mesh, alpha = 1.0)
         step = 100
         ax.scatter(pos[0], pos[1], pos[2], s = 10, c = 'r')
 
-        ax.scatter((pos + rays)[::step,0], (pos + rays)[::step,1],
-                   (pos + rays)[::step,2], s = 1, c = 'g')
+        #ax.scatter((pos + rays)[::step,0], (pos + rays)[::step,1],
+        #           (pos + rays)[::step,2], s = 1, c = 'g')
 
         '''
         ax.scatter(centroids[::step, 0], centroids[::step, 1], centroids[::step, 2],

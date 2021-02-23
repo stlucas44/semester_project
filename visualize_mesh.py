@@ -32,6 +32,6 @@ print(path_collection)
 
 for path in path_collection:
     mesh = loader.load_mesh(path)
-    #visualization.o3d_visualize(mesh)
-    visualization.mpl_visualize(mesh, alpha = 1.0)
+    visualization.o3d_visualize(mesh)
+    #visualization.mpl_visualize(mesh, alpha = 1.0)
 print("worked")

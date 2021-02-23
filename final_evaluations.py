@@ -55,12 +55,12 @@ huenli_params = {"path" : huenli_file, "aag" : (2.0, 4.0), "pc_sensor_fov" : [10
                 "look_down" : True
                 }
 
-rhone_params = {"path" : rhone_file, "aag" : (40.0, 80.0), "pc_sensor_fov" : [100, 85],
+rhone_params = {"path" : rhone_file, "aag" : (40.0, 60.0), "pc_sensor_fov" : [100, 85],
                 "disruption_range" : (0.5, 2.0),
                 "disruption_patch_size" : 0.5,
                 "refit_voxel_size": 0.1,
                 "cov_condition" : 0.5,
-                "cov_condition_resampling" : 0.8,
+                "cov_condition_resampling" : 1.0,
                 "corruption_percentage" : 0.2,
                 "look_down" : True
                 }
@@ -80,10 +80,10 @@ aic = False
 def eval_for_disruption():
 
     #params_list = [bunny_mesh_params, curve_mesh_params]
-    #params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
+    params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
     #params_list = [huenli_params]
     #params_list = [spiez_params]
-    params_list = [rhone_params]
+    #params_list = [rhone_params]
     #params_list = [bunny_mesh_params]
     #params_list = [curve_mesh_params]
 

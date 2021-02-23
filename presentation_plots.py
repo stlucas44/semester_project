@@ -15,11 +15,11 @@ from mesh_editor import corrupt_region_connected
 # settings:
 speed = 0 # 0 for high sensor resolution,
 plot_subplots = True
-show_subplots = True
+show_subplots = False
 
 # Single plots:
-plot_sensor = True
-plot_match = False
+plot_sensor = False
+plot_match = True
 plot_result = False
 
 
@@ -36,10 +36,14 @@ if speed == 0:
 
 # goal: plot nice gmm for bunny, curve, spiez and rohne
 # define sensor positions
-vp_bunny = (0.0, 1.0, 2.0)
+vp_bunny = (1.0, 1.0, 2.0)
+vp_pres_bunny = ()
 vp_curve = (30.0, -5.0, 0.0)
-vp_spiez = (5.0, 5.0, -30.0)
+vp_pres_curve = ()
+vp_spiez = (5.0, 5.0, -18.0)
+vp_pres_spiez = ()
 vp_rhone = (200.0, -150.0, 40.0)
+vp_pres_rohne = ()
 
 
 # define paths
@@ -55,7 +59,7 @@ spiez_file = data_folder + "/spiez_reduced.obj"
 
 
 #settings:
-bunny_mesh_params = {"path" : bunny_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [100, 85],
+bunny_mesh_params = {"path" : bunny_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [180, 180],
                      "disruption_range" : (0.0, 0.5),
                      "disruption_patch_size" : 0.15,
                      "refit_voxel_size" : 0.01,
@@ -72,7 +76,7 @@ curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [
                      "cov_condition" : 0.1,
                      "cov_condition_resampling" : 0.15,
                      "corruption_percentage" : 0.2,
-                     "look_down" : True
+                     "look_down" : False
                      }
 
 rhone_params = {"path" : rhone_file, "aag" : (50.0, 100.0), "pc_sensor_fov" : [100, 85],
@@ -143,6 +147,8 @@ def main(params,  aic = False, vp = None):
         view_point_angle = get_vp(rpy)
     # sample it for comparison and update
     measurement_pc = sample_points(true_mesh, n_points = n_pc_measurement)
+    #o3d_visualize(measurement_pc, mesh = False)
+
 
     measurement_gmm = Gmm()
     measurement_gmm.pc_hgmm(measurement_pc, recompute = recompute_items, path = tmp_gmm_true_pc,
@@ -223,6 +229,7 @@ def main(params,  aic = False, vp = None):
 
     # Free memory:
     prior_mesh = None
+    '''
 
     #### compute scores
     # score the corrupted gmm with sampled mesh
@@ -257,12 +264,24 @@ def main(params,  aic = False, vp = None):
         return ((score_true, score_prior, score_merged), p_values)
 
     return score_true, score_prior, score_merged
-
+    '''
 
 if __name__ == "__main__":
     #settings:
     vps = [vp_bunny, vp_curve, vp_rhone, vp_spiez]
     param_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
+
+    vps = [vp_curve]
+    param_list = [curve_mesh_params]
+
+    vps = [vp_bunny]
+    param_list = [bunny_mesh_params]
+
+    #vps = [vp_spiez]
+    #param_list = [spiez_params]
+
+
     for (param, vp) in zip(param_list, vps):
         print("inserting: ", param, vp)
         main(param, vp = vp)
+        #main(param)

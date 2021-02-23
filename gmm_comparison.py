@@ -12,7 +12,7 @@ def main():
     ### Visualizing scores in 1D
 
     # 1D gaussian range with corresponding scores
-    #run1()
+    run1()
 
     # 1D gaussian range with different covariance scales
     #run2()
@@ -31,7 +31,7 @@ def run1(): # vary means
     #visualize overlaying distribution and
     prior = Gmm(means = [0.0], covariances = [5.0])
     prior.num_gaussians = 1
-    m_means = np.arange(0, 20, 1).reshape((-1,1))
+    m_means = np.arange(0, 15, 2).reshape((-1,1))
     m_covs = 5.0 * np.ones(m_means.shape)
     measurement = Gmm(means = m_means, covariances = m_covs)
     measurement.num_gaussians = len(m_means)
@@ -45,7 +45,7 @@ def run1(): # vary means
 
     print(p_value)
     vis_update(prior, measurement, p_value)
-    plt.plot([0, len(p_value)], [p_crit, p_crit], 'r')
+    plt.plot([0, m_means.max()], [p_crit, p_crit], 'r')
     #vis_update(prior, measurement, [not elem for elem in result],
     #           path="imgs/1dMerge.png")
     plt.legend()
@@ -174,15 +174,15 @@ def vis_update(prior, measurement, result = None, path = None):
             fig, ax = plt.subplots(3, 1, constrained_layout=True, sharex = True)
             vis_result(measurement.covariances, result, ax[2], colors.T)
 
-        ax[2].set_title('T-test Result')
+        ax[2].set_title('T-test P value')
     else:
         fig, ax = plt.subplots(3, 1, constrained_layout=True, sharex = True)
 
 
-    ax[1].set_title('Prior')
+    ax[1].set_title('Prior GMM')
     vis_gmm(prior, ax[1], label = "Prior")
 
-    ax[0].set_title('Measurement')
+    ax[0].set_title('Measurement GMM')
     vis_gmm(measurement, ax[0], label = "measurement", color = colors)
 
     if path is not None:
@@ -201,7 +201,7 @@ def vis_gmm(gmm, ax, label = "", color= None):
         y = multivariate_normal.pdf(x, mean = gmm.means[i],
                                     cov=gmm.covariances[i])
         label = "mean = " + str(gmm.means[i]) + "  cov = " + str(gmm.covariances[i])
-        ax.plot(x,y, c = color[:,i], label = label)
+        ax.plot(x,y, c = color[:,i]) #label = label)
 
 def vis_result(means, results, ax, colors = None):
     if colors is None:
