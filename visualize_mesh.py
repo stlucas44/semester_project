@@ -27,7 +27,7 @@ rhone_file =  data_folder + "/rhone_enu_reduced.off"
 huenli_file = data_folder + "/gorner.off"
 spiez_file = data_folder + "/spiez_reduced.obj"
 
-path_collection = [bunny_file, vicon_file, curve_file, rhone_file, spiez_file]
+path_collection = [bunny_mesh_file, bunny_file, vicon_file, curve_file, rhone_file, spiez_file]
 print(path_collection)
 
 for path in path_collection:

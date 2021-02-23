@@ -15,12 +15,12 @@ from mesh_editor import corrupt_region_connected
 # settings:
 speed = 0 # 0 for high sensor resolution,
 plot_subplots = True
-show_subplots = False
+show_subplots = True
 
 # Single plots:
 plot_sensor = False
 plot_match = True
-plot_result = False
+plot_result = True
 
 
 # sensor params:
@@ -36,14 +36,14 @@ if speed == 0:
 
 # goal: plot nice gmm for bunny, curve, spiez and rohne
 # define sensor positions
-vp_bunny = (1.0, 1.0, 2.0)
-vp_pres_bunny = ()
-vp_curve = (30.0, -5.0, 0.0)
-vp_pres_curve = ()
+vp_bunny = (1.0, 2.0, 10.0) # (1.0, 2.0, 1.0) best so far
+vp_vis_bunny = (90.0, -90.0)
+vp_curve = (35.0, -3.0, 0.0)
+vp_vis_curve = (45.0, -10.0)
 vp_spiez = (5.0, 5.0, -18.0)
-vp_pres_spiez = ()
+vp_vis_spiez = (60.0, 0.0)
 vp_rhone = (200.0, -150.0, 40.0)
-vp_pres_rohne = ()
+vp_vis_rohne = (80.0, 0.0)
 
 
 # define paths
@@ -60,7 +60,7 @@ spiez_file = data_folder + "/spiez_reduced.obj"
 
 #settings:
 bunny_mesh_params = {"path" : bunny_file, "aag" : (1.0, 3.0), "pc_sensor_fov" : [180, 180],
-                     "disruption_range" : (0.0, 0.5),
+                     "disruption_range" : (0.0, 0.3),
                      "disruption_patch_size" : 0.15,
                      "refit_voxel_size" : 0.01,
                      "cov_condition" : 0.02,
@@ -114,7 +114,7 @@ tmp_gmm_true_pc = data_folder + "/tmp/tmp_measurement_gmm_pc"
 tmp_gmm_prior = data_folder + "/tmp/tmp_mesh_gmm"
 
 
-def main(params,  aic = False, vp = None):
+def main(params,  aic = False, vp = None, vp_vis = None):
 
     path = params['path']
     altitude_above_ground = params['aag']
@@ -141,10 +141,15 @@ def main(params,  aic = False, vp = None):
                                   only_important = True,
                                   look_down = look_down,
                                   vp = vp)
-    if vp is not None:
+    if vp_vis is not None:
+        view_point_angle = vp_vis
+
+    elif vp is not None:
         view_point_angle = get_vp(rpy, offset = vp)
     else:
         view_point_angle = get_vp(rpy)
+
+        
     # sample it for comparison and update
     measurement_pc = sample_points(true_mesh, n_points = n_pc_measurement)
     #o3d_visualize(measurement_pc, mesh = False)
@@ -163,7 +168,8 @@ def main(params,  aic = False, vp = None):
                      view_angle = view_point_angle,
                      path = get_figure_path(params, "measurement", folder = "imgs/presentation_plots/"),
                      title = ("measurement pc", "measurement gmm"),
-                     show = show_subplots)
+                     show = show_subplots,
+                     show_z = False)
         plt.close('all')
 
     # Free memory
@@ -224,7 +230,8 @@ def main(params,  aic = False, vp = None):
                  view_angle = view_point_angle,
                  path = get_figure_path(params, "final", folder = "imgs/presentation_plots/"),
                  title = ("true_mesh", "final gmm"),
-                 show = show_subplots)
+                 show = show_subplots,
+                 show_z = False)
         plt.close('all')
 
     # Free memory:
@@ -273,15 +280,18 @@ if __name__ == "__main__":
 
     vps = [vp_curve]
     param_list = [curve_mesh_params]
+    vp_viss = [vp_vis_curve]
 
-    vps = [vp_bunny]
-    param_list = [bunny_mesh_params]
+
+    #vps = [vp_bunny]
+    #param_list = [bunny_mesh_params]
+    #vp_viss = [vp_vis_bunny]
 
     #vps = [vp_spiez]
     #param_list = [spiez_params]
 
 
-    for (param, vp) in zip(param_list, vps):
+    for (param, vp, vp_vis) in zip(param_list, vps, vp_viss):
         print("inserting: ", param, vp)
-        main(param, vp = vp)
+        main(param, vp = vp, vp_vis = vp_vis)
         #main(param)

@@ -10,10 +10,11 @@ from lib.gmm_generation import Gmm
 
 # TODO: implement plt.draw() <-> show
 
-def o3d_visualize(*obj):
+def o3d_visualize(*obj, mesh = True):
     #option: mesh_sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.01)
-    obj = [element.compute_vertex_normals() for element in obj]
-    o3d.visualization.draw_geometries(obj)
+    if mesh:
+        obj = [element.compute_vertex_normals() for element in obj]
+    o3d.visualization.draw_geometries(obj, mesh_show_back_face=True)
 
 def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.8,
                   view_angle = None,
@@ -43,6 +44,8 @@ def mpl_subplots(obj_list, cov_scale = 1.0, colors = None, alpha = 0.8,
 
     if show:
         plt.show()
+    else:
+        return ax
 
 
 def mpl_visualize(*obj, cov_scale = 1.0, colors = None, alpha = 0.4,
@@ -131,13 +134,13 @@ def visualize_pc(pc, ax = None, sensor_origin = None,
 
     points = np.asarray(pc.points)
 
-    max_point_nr = 1000
+    max_point_nr = 5000
     samples = np.random.randint(0, len(points), (max_point_nr,))
     ax.scatter(points[samples,0], points[samples,1],
                points[samples,2], c = c, s =0.8,
                alpha = 0.7, label= "point cloud")
     if sensor_origin is not None:
-        ax.scatter(sensor_origin[0], sensor_origin[1], sensor_origin[2], c = "b", s = 2.0,
+        ax.scatter(sensor_origin[0], sensor_origin[1], sensor_origin[2], c = "b", s = 3.0,
         alpha = 0.7, label= "sensor_pos")
 
     if show:
@@ -189,10 +192,10 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
                                        + local_mean
         # Plot:
         if color is not None:
-            res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0,
+            res = ax.plot_surface(x, y, z, shade=False, linewidth=0.0,
                                   color = color)
         else:
-            res = ax.plot_surface(x, y, z, shade=True, linewidth=0.0)
+            res = ax.plot_surface(x, y, z, shade=False, linewidth=0.0)
 
         if show:
             plt.show()
@@ -208,8 +211,8 @@ def visualize_gmm_weights(gmm):
 
 def visualize_match_matrix(match, score):
     # create discrete colormap
-    cmap = mplcolors.ListedColormap(['red', 'green'])
-    bounds = [0,0.5,1.0]
+    cmap = plt.get_cmap("YlGn")
+    bounds = [0,0.5,0.7]
     norm = mplcolors.BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots(1,2)
@@ -218,9 +221,13 @@ def visualize_match_matrix(match, score):
     ax[0].set_ylabel('mesh gmms (item numbers)')
     ax[0].set_title('accepted t tests')
 
-    intensity_cm = plt.get_cmap("autumn")
+    #intensity_cm = plt.get_cmap("autumn_r")
+    intensity_cm = plt.get_cmap("YlOrRd")
+
     print(" scaling the colormap to ", np.round(np.max(score), 3))
-    ax[1].imshow(score, cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
+    #ax[1].imshow(np.log(score), cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
+    ax[1].imshow(np.log(score), cmap=intensity_cm, vmin= -8.0, vmax= 0.0)
+
     ax[1].set_xlabel('measurement gmms (item numbers)')
     ax[1].set_ylabel('mesh gmms (item numbers)')
     ax[1].set_title("intersection heat map, p_max = " + str(np.round(np.max(score), 3)))
