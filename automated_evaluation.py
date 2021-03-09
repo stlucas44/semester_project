@@ -211,16 +211,13 @@ def main(params,  aic = False):
     plt.close('all')
 
     if aic:
-        true_gmm.mesh_hgmm(true_mesh,  min_points = 8,
-                          max_mixtures = 800,
-                          verbose = False,
-                          cov_condition = cov_condition)
         aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
         aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
         aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
 
         print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
-        p_values =  evaluation.compare_AIC([aic_true, aic_prior, aic_merged])
+        aic_values = evaluation[[aic_true, aic_prior, aic_merged]]
+        p_values =  evaluation.compare_AIC(aic_values)
         print("AIC P values: ", p_values)
         return ((score_true, score_prior, score_merged), p_values)
 

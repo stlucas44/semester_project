@@ -19,7 +19,7 @@ show_subplots = True
 
 # Single plots:
 plot_sensor = False
-plot_match = False
+plot_match = True
 plot_result = True
 
 
@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
     #vps = [vp_spiez]
     #param_list = [spiez_params]
-
+    
 
     for (param, vp, vp_vis) in zip(param_list, vps, vp_viss):
         print("inserting: ", param, vp)

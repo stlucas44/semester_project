@@ -75,7 +75,7 @@ spiez_params = {"path" : spiez_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100,
                 "look_down" : False
                 }
 
-aic = False
+aic = True
 
 def eval_for_disruption():
 
@@ -160,6 +160,13 @@ def eval_for_disruption_distance():
                                 show = False,
                                 xlabel = "avg batch offset ")
 
+        if aic:
+            draw_advanced_box_plots(aic_results, labels, distances,
+                                title = get_name(params['path']) +
+                                "\n AIC evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
+                                path = get_figure_path(params, "box"),
+                                show = False,
+                                xlabel = "avg batch offset ")
 
 
 

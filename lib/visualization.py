@@ -177,8 +177,8 @@ def visualize_gmm(gmm, ax = None, show_mean = True, cov_scale = 1.0, show = Fals
 
         #print(eigs)
         # Set of all spherical angles:
-        u = np.linspace(0, 2 * np.pi, 10)
-        v = np.linspace(-np.pi/2.0, np.pi/2.0, 10)
+        u = np.linspace(0, 2 * np.pi, 20)
+        v = np.linspace(-np.pi/2.0, np.pi/2.0, 20)
 
         # Cartesian coordinates that correspond to the spherical angles:
         # (this is the equation of an ellipsoid):
@@ -216,21 +216,21 @@ def visualize_match_matrix(match, score):
     norm = mplcolors.BoundaryNorm(bounds, cmap.N)
 
     fig, ax = plt.subplots(1,2)
-    ax[0].imshow(match, cmap=cmap, norm=norm)
-    ax[0].set_xlabel('measurement gmms (item numbers)')
-    ax[0].set_ylabel('mesh gmms (item numbers)')
-    ax[0].set_title('accepted t tests')
+    ax[1].imshow(match, cmap=cmap, norm=norm)
+    ax[1].set_xlabel('measurement gmms (item numbers)')
+    ax[1].set_ylabel('mesh gmms (item numbers)')
+    ax[1].set_title('accepted t tests')
 
     #intensity_cm = plt.get_cmap("autumn_r")
     intensity_cm = plt.get_cmap("YlOrRd")
 
     print(" scaling the colormap to ", np.round(np.max(score), 3))
     #ax[1].imshow(np.log(score), cmap=intensity_cm, vmin= 0.0, vmax= np.max(score))
-    ax[1].imshow(np.log(score), cmap=intensity_cm, vmin= -8.0, vmax= 0.0)
+    ax[0].imshow(np.log(score), cmap=intensity_cm, vmin= -8.0, vmax= 0.0)
 
-    ax[1].set_xlabel('measurement gmms (item numbers)')
-    ax[1].set_ylabel('mesh gmms (item numbers)')
-    ax[1].set_title("intersection heat map, p_max = " + str(np.round(np.max(score), 3)))
+    ax[0].set_xlabel('measurement gmms (item numbers)')
+    ax[0].set_ylabel('mesh gmms (item numbers)')
+    ax[0].set_title("intersection heat map, p_max = " + str(np.round(np.max(score), 3)))
     plt.show()
 
 def draw_box_plots(data, labels, title = None):

@@ -3,6 +3,7 @@ import open3d as o3d
 from os.path import expanduser
 from lib import visualization as vis
 from lib.loader import *
+from lib import gmm_generation
 
 import networkx as nx
 import trimesh
@@ -22,7 +23,8 @@ crush_bunny = False
 scale_bunny = False
 crush_random = False
 load_random = False
-reduce_mesh = True
+reduce_mesh = False
+fit_single_triangle = True
 
 model_scaling = 10
 
@@ -80,7 +82,7 @@ def main():
         bunny = automated_view_point_mesh(bunny_mesh_file_large, sensor_max_range = 3.0)
         vis.mpl_visualize(bunny)
 
-    if subsample_mesh:
+    if reduce_mesh:
         vp = (90.0, 0.0)
         mesh = o3d.io.read_triangle_mesh(path)
         vis.mpl_visualize(mesh, view_angle = vp)
@@ -88,6 +90,18 @@ def main():
         #mesh = sub_sample
         vis.mpl_visualize(mesh, alpha = 1.0,  view_angle = vp)
         save_submesh(mesh, path)
+
+    if fit_single_triangle:
+        mesh = cubeGenerator().generate_cube()
+
+        #mesh = loader.load_unit_mesh(type = 'flat')
+
+        gmm = gmm_generation.Gmm()
+        gmm.mesh_gmm(mesh, n = 8, recompute = True)
+        vis.mpl_visualize(gmm, mesh, alpha = 0.8, cov_scale = 2.0)
+
+
+
     pass
 
 class cubeGenerator():
