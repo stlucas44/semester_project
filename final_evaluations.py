@@ -5,7 +5,7 @@ import gc
 
 #paths:
 home = expanduser("~")
-data_folder = home + "/semester_project/data"
+data_folder = home + "/semester_project/src/data"
 bunny_file = data_folder + "/bunny.ply"
 vicon_file = data_folder + "/vicon.stl"
 curve_file = data_folder + "/curve.off"
@@ -78,7 +78,7 @@ spiez_params = {"path" : spiez_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100,
 aic = True
 
 def eval_for_disruption():
-    #params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
+    params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 10

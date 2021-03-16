@@ -14,9 +14,9 @@ from mesh_editor import corrupt_region_connected
 
 #files
 home = expanduser("~")
-data_folder = home + "/semester_project/data"
-bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
-bunny_mesh_file_corrupted = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
+data_folder = home + "/semester_project/src/data"
+bunny_mesh_file = data_folder + "/bunny.ply"
+bunny_mesh_file_corrupted = data_folder + "/bunny_corrupted.ply"
 
 speed = 0 # 0 for high sensor resolution,
 plot = True

@@ -32,12 +32,12 @@ model_scaling = 10
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4.ply"
-bunny_mesh_file_large = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
+bunny_mesh_file_large = data_folder + "/bunny.ply"
 bunny_mesh_file_large_corr = data_folder + \
-                        "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
+                        "/bunny_corrupted.ply"
 
 bunny_pc_file = data_folder + "/bunny/data/bun045.ply"
-bunny_pc_file_large = data_folder + "/bunny/data/bun045_large.ply"
+bunny_pc_file_large = data_folder + "/bunny_pc.ply"
 
 spiez_file = data_folder + "/spiez.obj"
 rhone_file = data_folder + "/rhone_enu.off"

@@ -2,8 +2,11 @@
 Code base for the semster thesis **Local 3D Mesh Refinement via Gaussian Mixture Modelling**.
 
 ## Setup
-To set this pipeline up you need to configure your virtual environment as written in `setup/requirements.txt` (TBA). Further
-you need to build and install the repositories [directGMM](git@github.com:stlucas44/direct_gmm.git) (branch:`inital testing`) and [pymesh](https://pymesh.readthedocs.io/en/latest/index.html) (follow the install instructions on the site).
+To set this pipeline up you need to configure your virtual environment as written in `install/requirements.txt`:
+```
+pip install -r install/requirements.txt
+```
+Further you need to build and install the repository [directGMM](git@github.com:stlucas44/direct_gmm.git) (branch:`inital testing`) and [pymesh](https://pymesh.readthedocs.io/en/latest/index.html) (follow the install instructions on the website).
 
 
 ## Overview

@@ -49,7 +49,7 @@ vp_vis_rohne = (70.0, 0.0)
 # define paths
 #paths:
 home = expanduser("~")
-data_folder = home + "/semester_project/data"
+data_folder = home + "/semester_project/src/data"
 bunny_file = data_folder + "/bunny.ply"
 vicon_file = data_folder + "/vicon.stl"
 curve_file = data_folder + "/curve.off"

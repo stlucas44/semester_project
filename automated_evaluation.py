@@ -15,7 +15,7 @@ from mesh_editor import corrupt_region_connected
 
 #files
 home = expanduser("~")
-data_folder = home + "/semester_project/data"
+data_folder = home + "/semester_project/src/data"
 bunny_file = data_folder + "/bunny.ply"
 vicon_file = data_folder + "/vicon.stl"
 curve_file = data_folder + "/curve.off"

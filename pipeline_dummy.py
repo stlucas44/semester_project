@@ -14,10 +14,9 @@ import trimesh
 
 #define data path
 home = expanduser("~")
-data_folder = home + "/semester_project/data"
-bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
-bunny_point_cloud_file = data_folder + "/bunny/data/bun045_large.ply"
-cube_file = "test_cube.ply"
+data_folder = home + "/semester_project/src/data"
+bunny_mesh_file = data_folder + "/bunny_corrupted.ply"
+bunny_point_cloud_file = data_folder + "/bunny_pc.ply"
 
 #loadable gmms for speed
 tmp_gmm_measurement = data_folder + "/tmp/tmp_measurement_gmm"
