@@ -16,7 +16,7 @@ from mesh_editor import corrupt_region_connected
 #files
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
-bunny_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large.ply"
+bunny_file = data_folder + "/bunny.ply"
 vicon_file = data_folder + "/vicon.stl"
 curve_file = data_folder + "/curve.off"
 rone_file =  data_folder + "/rhone_enu.off"
@@ -181,6 +181,11 @@ def main(params,  aic = False):
                  path = get_figure_path(params, "final"),
                  title = ("true_mesh", "final gmm"),
                  show = show_subplots)
+        mpl_subplots((prior_mesh, final_gmm), cov_scale = 2.0,
+                 view_angle = view_point_angle,
+                 path = get_figure_path(params, "comp"),
+                 title = ("prior mesh", "final gmm"),
+                 show = show_subplots)
         plt.close('all')
 
     # Free memory:
@@ -203,8 +208,6 @@ def main(params,  aic = False):
                       verbose = False,
                       cov_condition = cov_condition)
     save_to_file(true_gmm, get_file_path(params, "true", ".csv"))
-
-
     score_true = evaluation.eval_quality_maha(true_gmm, true_pc)
 
     print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
@@ -216,7 +219,7 @@ def main(params,  aic = False):
         aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
 
         print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
-        aic_values = evaluation[[aic_true, aic_prior, aic_merged]]
+        aic_values = [[aic_true, aic_prior, aic_merged]]
         p_values =  evaluation.compare_AIC(aic_values)
         print("AIC P values: ", p_values)
         return ((score_true, score_prior, score_merged), p_values)
@@ -243,18 +246,8 @@ if __name__ == "__main__":
                          "corruption_percentage" : 0.2
                          }
 
-    vicon_params = {"path" : vicon_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100, 85],
-                    "disruption_range" : (0.5, 2.0),
-                    "disruption_patch_size" : 0.5,
-                    "refit_voxel_size": 0.05,
-                    "cov_condition" : 0.05,
-                    "cov_condition_resampling" : 0.1,
-                    "corruption_percentage" : 0.2
-                    }
+    params_list = [bunny_mesh_params, curve_mesh_params]
 
-    #params_list = [bunny_mesh_params, curve_mesh_params]
-    #params_list = [bunny_mesh_params]
-    params_list = [curve_mesh_params]
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
     iterations_per_scale = 5

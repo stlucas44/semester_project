@@ -168,9 +168,10 @@ def gmm_merge(prior_gmm, measurement_gmm, p_crit = 0.95, sample_size = 100,
     resampled_mixture_mask = np.ones((len(resampled_mixture.means),), dtype=bool)
     measurement_only_mixture_mask = np.ones((len(measurement_only_mixture.means),), dtype=bool)
 
-    final_mixture =gmm_generation.merge_gmms(
-            resampled_mixture, resampled_mixture_mask,
-            measurement_only_mixture, measurement_only_mixture_mask)
+    #final_mixture = gmm_generation.merge_gmms(
+    #        resampled_mixture, resampled_mixture_mask,
+    #        measurement_only_mixture, measurement_only_mixture_mask)
+    final_mixture = resampled_mixture
 
     if return_only_final:
         return final_mixture
@@ -318,7 +319,8 @@ def create_masks(match, score):
     column_sums = np.sum(match, axis = 0) #column sum
     row_sums = np.sum(match, axis = 1) # row sum
 
-    measurement_mask = column_sums != 0
+    #measurement_mask = column_sums != 0
+    measurement_mask = np.ones(column_sums.shape, dtype = bool)
     prior_mask = row_sums != 0
 
     return prior_mask, measurement_mask

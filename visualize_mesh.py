@@ -4,6 +4,7 @@ from os.path import expanduser
 from lib import visualization
 from lib import loader
 
+from lib import gmm_generation
 
 home = expanduser("~")
 data_folder = home + "/semester_project/data"
@@ -28,10 +29,40 @@ huenli_file = data_folder + "/gorner.off"
 spiez_file = data_folder + "/spiez_reduced.obj"
 
 path_collection = [bunny_mesh_file, bunny_file, vicon_file, curve_file, rhone_file, spiez_file]
-print(path_collection)
 
-for path in path_collection:
-    mesh = loader.load_mesh(path)
-    visualization.o3d_visualize(mesh)
-    #visualization.mpl_visualize(mesh, alpha = 1.0)
-print("worked")
+vis_mesh = True
+vis_gmm = False
+
+if vis_mesh:
+    for path in path_collection:
+        mesh = loader.load_mesh(path)
+        #visualization.o3d_visualize(mesh)
+        visualization.mpl_visualize(mesh, alpha = 1.0, view_angle = (30,20))
+    print("worked")
+if vis_gmm:
+    simple_gmm = gmm_generation.Gmm()
+    h_gmm = gmm_generation.Gmm()
+    print("Loading: ", )
+    mesh = loader.load_mesh(bunny_file)
+
+    mesh = loader.view_point_crop_by_cast(mesh, [0.0, 1.0, 2.0],
+                        [0.0, 89.0, 89.0],
+                        sensor_max_range = 100.0,
+                        sensor_fov = [180.0, 180.0],
+                        angular_resolution = 1.0,
+                        get_pc = False,
+                        plot = False,
+                        only_important = False)
+
+    pc = loader.sample_points(mesh)
+    simple_gmm.pc_simple_gmm(pc, n = 20)
+    h_gmm.pc_hgmm(pc, cov_condition = 0.05)
+
+    visualization.mpl_subplots((simple_gmm, h_gmm), cov_scale = 2.0,
+             view_angle =  (-90,90),
+             show_z = False,
+             path = home + "/semester_project/src/imgs/thesis_plots/gmm_hgmm_comparison.png",
+             title = ("fixed size GMM", "hierarhcial GMM"), show = True)
+
+    visualization.mpl_visualize(simple_gmm, cov_scale = 2.0, view_angle = (-90,90))
+    visualization.mpl_visualize(h_gmm, cov_scale = 2.0, view_angle = (-90,90))

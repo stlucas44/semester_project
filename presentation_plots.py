@@ -19,8 +19,8 @@ show_subplots = True
 
 # Single plots:
 plot_sensor = False
-plot_match = True
-plot_result = True
+plot_match = False
+plot_result = False
 
 
 # sensor params:
@@ -41,9 +41,9 @@ vp_vis_bunny = (90.0, -90.0)
 vp_curve = (35.0, -3.0, 0.0)
 vp_vis_curve = (30.0, -10.0)
 vp_spiez = (5.0, 5.0, -18.0)
-vp_vis_spiez = (60.0, 0.0)
-vp_rhone = (200.0, -150.0, 40.0)
-vp_vis_rohne = (80.0, 0.0)
+vp_vis_spiez = (30.0, 20.0)
+vp_rhone = (200.0, -150.0, 20.0)
+vp_vis_rohne = (70.0, 0.0)
 
 
 # define paths
@@ -79,14 +79,14 @@ curve_mesh_params = {"path" : curve_file, "aag" : (2.0,4.0), "pc_sensor_fov" : [
                      "look_down" : False
                      }
 
-rhone_params = {"path" : rhone_file, "aag" : (50.0, 100.0), "pc_sensor_fov" : [100, 85],
+rhone_params = {"path" : rhone_file, "aag" : (50.0, 100.0), "pc_sensor_fov" : [80, 60],
                 "disruption_range" : (0.5, 2.0),
                 "disruption_patch_size" : 0.5,
                 "refit_voxel_size": 0.05,
                 "cov_condition" : 0.05,
                 "cov_condition_resampling" : 0.1,
                 "corruption_percentage" : 0.2,
-                "look_down" : True
+                "look_down" : False
                 }
 
 spiez_params = {"path" : spiez_file, "aag" : (0.5, 1.0), "pc_sensor_fov" : [100, 85],
@@ -94,7 +94,7 @@ spiez_params = {"path" : spiez_file, "aag" : (0.5, 1.0), "pc_sensor_fov" : [100,
                 "disruption_patch_size" : 0.8,
                 "refit_voxel_size": 0.05,
                 "cov_condition" : 0.2,
-                "cov_condition_resampling" : 0.3,
+                "cov_condition_resampling" : 0.2,
                 "corruption_percentage" : 0.2,
                 "look_down" : False
                 }
@@ -237,52 +237,22 @@ def main(params,  aic = False, vp = None, vp_vis = None):
         mpl_visualize(final_gmm, title="final gmm", cov_scale = 2.0)
 
     if plot_subplots:
-        mpl_subplots((true_mesh, final_gmm), cov_scale = 2.0,
+        mpl_subplots((prior_gmm, final_gmm), cov_scale = 2.0,
                  view_angle = view_point_angle,
                  path = get_figure_path(params, "final", folder = "imgs/presentation_plots/"),
-                 title = ("true_mesh", "final gmm"),
+                 title = ("prior gmm", "final gmm"),
                  show = show_subplots,
                  show_z = False)
+
+        mpl_subplots((prior_mesh, final_gmm), cov_scale = 2.0,
+                 view_angle = view_point_angle,
+                 path = get_figure_path(params, "comp", folder = "imgs/presentation_plots/"),
+                 title = ("prior mesh", "final gmm"),
+                 show = show_subplots)
         plt.close('all')
 
     # Free memory:
     prior_mesh = None
-    '''
-
-    #### compute scores
-    # score the corrupted gmm with sampled mesh
-    print('Starting scoring'.center(80,'*'))
-    true_pc = sample_points(true_mesh, n_points = n_pc_true) #n_pc_true)
-    # generate gmms
-    true_gmm = Gmm()
-    #true_gmm.mesh_gmm(true_mesh, n = len(measurement_gmm.means), recompute = recompute_items, path = tmp_gmm_true)
-    true_gmm.naive_mesh_gmm(true_mesh, mesh_std = 0.05)
-    #save_to_file(true_gmm, get_file_path(params, "true", ".csv"))
-
-
-    score_true = evaluation.eval_quality_maha(true_gmm, true_pc)
-    score_prior = evaluation.eval_quality_maha(prior_gmm, true_pc)
-    score_merged = evaluation.eval_quality_maha(final_gmm, true_pc)
-
-    print("Maha Scores: true, prior, updated", score_true, score_prior, score_merged)
-    plt.close('all')
-
-    if aic:
-        true_gmm.mesh_hgmm(true_mesh,  min_points = 8,
-                          max_mixtures = 800,
-                          verbose = False,
-                          cov_condition = cov_condition)
-        aic_true = evaluation.eval_quality_AIC(true_gmm, true_pc)
-        aic_prior = evaluation.eval_quality_AIC(prior_gmm, true_pc)
-        aic_merged = evaluation.eval_quality_AIC(final_gmm, true_pc)
-
-        print("AIC Scores: true, prior, updated", aic_true, aic_prior, aic_merged)
-        p_values =  evaluation.compare_AIC([aic_true, aic_prior, aic_merged])
-        print("AIC P values: ", p_values)
-        return ((score_true, score_prior, score_merged), p_values)
-
-    return score_true, score_prior, score_merged
-    '''
 
 if __name__ == "__main__":
     #settings:
@@ -293,14 +263,21 @@ if __name__ == "__main__":
     param_list = [curve_mesh_params]
     vp_viss = [vp_vis_curve]
 
+    vps = [vp_rhone]
+    param_list = [rhone_params]
+    vp_viss = [vp_vis_rohne]
+
+    vps = [vp_spiez]
+    param_list = [spiez_params]
+    vp_viss = [vp_vis_spiez]
 
     #vps = [vp_bunny]
     #param_list = [bunny_mesh_params]
     #vp_viss = [vp_vis_bunny]
 
-    #vps = [vp_spiez]
-    #param_list = [spiez_params]
-    
+    #vps = [vp_spiez, vp_curve]
+    #param_list = [spiez_params, curve_mesh_params]
+    #vp_vis = [vp_vis_spiez, vp_vis_curve]
 
     for (param, vp, vp_vis) in zip(param_list, vps, vp_viss):
         print("inserting: ", param, vp)

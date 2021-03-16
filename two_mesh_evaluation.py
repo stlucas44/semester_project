@@ -73,7 +73,9 @@ def main():
     #true_mesh = load_unit_mesh(type = '2trisA')
 
     # reduce to view point
-    true_mesh_vp, true_mesh_occ = view_point_crop(true_mesh,
+    true_mesh.compute_triangle_normals()
+    true_mesh.compute_vertex_normals()
+    true_mesh_vp, true_mesh_occ = view_point_crop_by_trace(true_mesh,
            pc_sensor_position_enu,
            pc_sensor_rpy,
            sensor_max_range = pc_range,
@@ -98,17 +100,13 @@ def main():
     print('True mesh and PC'.center(80,'*'))
 
     # load corrupted mesh
-    #prior_mesh = load_mesh(bunny_mesh_file)
     prior_mesh = load_mesh(bunny_mesh_file_corrupted)
-    #prior_mesh = corrupt_region_connected(true_mesh_vp, corruption_percentage = 0.2,
-    #                             n_max = 10,
-    #                             offset_range = (0.0,0.2),
-    #                             max_batch_area = 0.15)
 
-    #prior_mesh = load_unit_mesh(type = '2trisB')
 
     # view point crop
-    prior_mesh_vp, prior_mesh_occ = view_point_crop(prior_mesh,
+    prior_mesh.compute_triangle_normals()
+    prior_mesh.compute_vertex_normals()
+    prior_mesh_vp, prior_mesh_occ = view_point_crop_by_trace(prior_mesh,
            pc_sensor_position_enu,
            pc_sensor_rpy,
            sensor_max_range = pc_range,
@@ -121,12 +119,7 @@ def main():
     #prior_gmm.naive_mesh_gmm(prior_mesh_vp, mesh_std = 0.05)
 
 
-    #first plots:
-    #mpl_visualize(prior_mesh_vp, prior_gmm, colors = ["g", "r"], title="prior gmm/mesh", cov_scale = 2.0)
-    #mpl_visualize(measurement_pc, prior_mesh, colors = ["g", "r"], title="prior mesh")
-
     #### merge mesh with corrupted point cloud
-    # apply merge with
     print('Compute merge'.center(80,'*'))
 
     merged_gmm_lists, final_gmm, final_gmm_pair = merge.gmm_merge(

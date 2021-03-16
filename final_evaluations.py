@@ -78,18 +78,10 @@ spiez_params = {"path" : spiez_file, "aag" : (0.5, 2.0), "pc_sensor_fov" : [100,
 aic = True
 
 def eval_for_disruption():
-
-    #params_list = [bunny_mesh_params, curve_mesh_params]
-    params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
-    #params_list = [huenli_params]
-    #params_list = [spiez_params]
-    #params_list = [rhone_params]
-    #params_list = [bunny_mesh_params]
-    #params_list = [curve_mesh_params]
-
+    #params_list = [bunny_mesh_params, curve_mesh_params, spiez_params, rhone_params]
 
     corruptions = [0.05, 0.1, 0.2, 0.4]
-    iterations_per_scale = 5
+    iterations_per_scale = 10
     results = np.zeros((len(corruptions), iterations_per_scale, 3))
     if aic:
         aic_results = np.zeros((len(corruptions), iterations_per_scale, 3))
@@ -124,58 +116,6 @@ def eval_for_disruption():
                                     )
         print(("finished with" + params['path']).center(100, '*'))
         gc.collect()
-
-
-def eval_for_disruption_distance():
-    params_list = [bunny_mesh_params, curve_mesh_params]
-    #params = bunny_mesh_params
-    #params = curve_mesh_params
-    #params = vicon_params
-
-    distances = [0.0, 0.1, 0.5, 1.0, 2.0]
-
-    iterations_per_scale = 5
-    results = np.zeros((len(corruptions), iterations_per_scale, 3))
-    if aic:
-        aic_results = np.zeros((len(corruptions), iterations_per_scale, 3))
-    for params in params_list:
-        for (distance_number, distance) in zip(np.arange(0,len(distances)),distances):
-            for (iteration, result) in zip(np.arange(0,iterations_per_scale), results):
-                print(("Starting on current scale: " + str(corruption_scale) +
-                       " current iteration: " + str(iteration)).center(80,'*'))
-                params["disruption_range"] = (distances - 0.05, distances + 0.05)
-                if aic:
-                    results[distance_number, iteration], aic_results[distance_number, iteration] = main(params, aic = aic)
-                else:
-                    results[distance_number, iteration] = main(params, aic = aic) # result is [1,3]
-
-                #print("worked again")
-                gc.collect()
-                #print("results: ", results)
-        labels = ["True", "Prior", "Refined"]
-        draw_advanced_box_plots(results, labels, distances,
-                                title = get_name(params['path']) +
-                                "\n Evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
-                                path = get_figure_path(params, "box"),
-                                show = False,
-                                xlabel = "avg batch offset ")
-
-        if aic:
-            draw_advanced_box_plots(aic_results, labels, distances,
-                                title = get_name(params['path']) +
-                                "\n AIC evaluation wrt prior quality (n = " + str(iterations_per_scale) + ")",
-                                path = get_figure_path(params, "box"),
-                                show = False,
-                                xlabel = "avg batch offset ")
-
-
-
-        print(("finished with" + params['path']).center(100, '*'))
-
-    pass
-
-def eval_for_smoothness():
-    pass
 
 
 if __name__ == "__main__":

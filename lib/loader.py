@@ -1,4 +1,6 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D as ax
+
 import copy
 from datetime import datetime
 
@@ -104,7 +106,7 @@ def automated_view_point_mesh(path, altitude_above_ground = (1.0, 3.0),
         view_point_dist = np.linalg.norm(mesh_center - pos)
 
     if look_down:
-        (x, y, z) =  -relative_pos
+        (x, y, z) =  -np.asarray(pos)
 
     else:
         (x, y, z) = mesh_center - pos
@@ -205,7 +207,7 @@ def view_point_crop_by_cast(mesh, pos, rpy,
                    (ray_centers + rays)[::step,2], s = 1, c = 'g')
         plt.show()
     #TODO (stlucas): keep removed triangles in different mesh
-    return mesh, occluded_mesh
+    return mesh #, occluded_mesh
 
 
 def view_point_crop_by_trace(mesh, pos, rpy,

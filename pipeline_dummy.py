@@ -45,15 +45,6 @@ def main():
     range = 6.0
     angular_resolution = 0.3
 
-
-    #fit measurement gmm
-    measurement_gmm = Gmm()
-    #options
-    #measurement_gmm.pc_simple_gmm(measurement_pc, n = 50, recompute = False,
-    #                              path = tmp_gmm_file)
-    #measurement_gmm.pc_hgmm(measurement_pc, path = tmp_gmm_measurement, recompute = True)
-    #measurement_gmm.sample_from_gmm()
-
     ##### process prior
     # load mesh (#TODO(stlucas): localize (rough) mesh location)
     prior_mesh = load_mesh(bunny_mesh_file)
@@ -73,8 +64,6 @@ def main():
     mpl_visualize(prior_gmm , cov_scale = 2.0, colors = ['r', 'g'])
     mpl_visualize(prior_gmm, view_point_mesh , cov_scale = 2.0, colors = ['r', 'g'])
 
-    #return
-
     ##### register and merge
     # compute registration
         # possibilities: icp, gmm_reg, etc.
@@ -83,6 +72,9 @@ def main():
 
     #transform pc to the right spot
     measurement_registered = registration.transform_measurement(measurement_pc, transform)
+
+    #fit measurement gmm
+    measurement_gmm = Gmm()
     #measurement_gmm.pc_simple_gmm(measurement_registered, path = tmp_gmm_measurement, recompute = False)
     measurement_gmm.pc_hgmm(measurement_registered, path = tmp_gmm_measurement, recompute = False)
 
@@ -103,13 +95,7 @@ def main():
                       cov_scale = 2.0,
                       alpha = 0.2)
 
-    # evaluate mesh
-    #ref_mesh = copy.deepcopy(prior_mesh)
-    #error_mesh = evaluation.eval_quality(ref_mesh, prior_mesh)
-
     ##### visualize
-    #presentation_plots:
-    #presentation_plots(measurement_registered, prior_mesh, measurement_gmm, prior_gmm)
 
     #o3d_visualize(measurement_pc, prior_mesh, measurement_registered)
     mpl_visualize(measurement_pc, prior_mesh, measurement_registered, colors = ['y', 'r', 'b', 'g']) #registration
@@ -125,15 +111,6 @@ def main():
     #visualize distribution
     #visualize_gmm_weights(measurement_gmm)
 
-
-# TODO(stlucas): to be moved to its own class?!
-def presentation_plots(measurement_pc, prior_mesh, measurement_gmm, prior_gmm):
-    mpl_visualize(measurement_pc, view_angle = view_point_angle, path="imgs/measurement_pc.png", show_z = False)
-    mpl_visualize(prior_mesh, alpha = 1, view_angle = view_point_angle, path="imgs/prior_mesh.png", show_z = False)
-    mpl_visualize(measurement_gmm, cov_scale = 2.0, show_mean = False, view_angle = view_point_angle,
-                  path="imgs/measurement_gmm.png", show_z = False)
-    mpl_visualize(prior_gmm, cov_scale = 2.0, show_mean = False, view_angle = view_point_angle,
-                  path="imgs/prior_gmm.png", show_z = False)
 
 if __name__ == "__main__":
     main()
