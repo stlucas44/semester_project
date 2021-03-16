@@ -7,7 +7,7 @@ from lib import loader
 from lib import gmm_generation
 
 home = expanduser("~")
-data_folder = home + "/semester_project/data"
+data_folder = home + "/semester_project/src/data"
 bunny_mesh_file = data_folder + "/bunny/reconstruction/bun_zipper_res4_large_corrupted.ply"
 bunny_point_cloud_file = data_folder + "/bunny/data/bun045_large.ply"
 
@@ -28,7 +28,7 @@ rhone_file =  data_folder + "/rhone_enu_reduced.off"
 huenli_file = data_folder + "/gorner.off"
 spiez_file = data_folder + "/spiez_reduced.obj"
 
-path_collection = [bunny_mesh_file, bunny_file, vicon_file, curve_file, rhone_file, spiez_file]
+path_collection = [bunny_file, vicon_file, curve_file, rhone_file, spiez_file]
 
 vis_mesh = True
 vis_gmm = False
