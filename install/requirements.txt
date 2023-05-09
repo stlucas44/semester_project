@@ -50,12 +50,12 @@ imageio==2.9.0
 importlib-metadata==2.0.0
 interactive-markers==1.11.5
 ipykernel==5.3.4
-ipython==7.16.1
+ipython==8.10
 ipython-genutils==0.2.0
 ipywidgets==7.5.1
 jedi==0.17.2
 Jinja2==2.11.2
-joblib==0.17.0
+joblib==1.1.1
 jsonschema==3.2.0
 jupyter==1.0.0
 jupyter-client==6.1.7
@@ -171,7 +171,7 @@ sklearn==0.0
 smclib==1.8.5
 tensorboard==2.4.0
 tensorboard-plugin-wit==1.7.0
-tensorflow==2.4.0
+tensorflow==2.4.3
 tensorflow-estimator==2.4.0
 termcolor==1.1.0
 terminado==0.9.1
@@ -196,7 +196,7 @@ vtk==9.0.1
 waymo-open-dataset==1.0.1
 wcwidth==0.2.5
 webencodings==0.5.1
-Werkzeug==1.0.1
+Werkzeug==2.2.3
 widgetsnbextension==3.5.1
 wrapt==1.12.1
 xacro==1.13.9
